@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игровой автомат: Казино</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tone.js CDN for sound effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Default dark background for body */
+            color: #e2e8f0; /* Default light text color for dark theme */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Changed from 10vh to ensure it always takes full height */
+            margin: 0;
+            overflow-x: hidden;
+            padding: 1rem;
+            box-sizing: border-box;
+            transition: background-color 0.5s ease-in-out;
+        }
+        .container {
+            background-color: #2d3748; /* Default dark background for container */
+            padding: 2rem;
+            border-radius: 2rem;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3); /* Darker shadow */
+            max-width: 95%; /* Responsive width */
+            width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            border: 1px solid #4a5568; /* Darker border */
+            transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out, border-color 0.5s ease-in-out; /* Smooth theme transition */
+        }
+        h1 {
+            color: #f0f2f5; /* Light color for heading */
+            transition: color 0.5s ease-in-out;
+        }
+        .slot-reel {
+            background-color: #0a0a0a; /* Very dark background for reels */
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            width: 100px; /* Fixed width */
+            height: 100px; /* Fixed height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3.5rem;
+            color: #fff;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5); /* Stronger inner shadow */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Stronger text shadow */
+            transition: background-color 0.3s ease;
+            flex-shrink: 0; /* Prevent reels from shrinking */
+        }
+        .slot-reels-container {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            justify-content: center;
+            width: 100%; /* Ensure container takes full width */
+            overflow: hidden; /* Hide overflow on reels themselves if needed */
+        }
+
+        /* Adjust reel size for smaller screens */
+        @media (max-width: 400px) {
+            .slot-reel {
+                width: 80px;
+                height: 80px;
+                font-size: 3rem;
+                padding: 0.5rem;
+            }
+            .slot-reels-container {
+                gap: 0.5rem;
+            }
+        }
+
+        /* Spin Button - Larger */
+        #spinButton {
+            width: 100%; /* Full width */
+            max-width: 400px; /* Wider button */
+            padding: 1.2rem 2.5rem; /* More padding */
+            font-size: 1.8rem; /* Larger font size */
+            margin-top: 1rem; /* Add some margin */
+            border-radius: 1.5rem; /* More rounded */
+            background-image: linear-gradient(to right, #f97316, #fb923c); /* Orange gradient */
+            box-shadow: 0 10px 25px rgba(249, 115, 22, 0.5); /* Stronger shadow */
+            transition: all 0.2s ease-in-out;
+        }
+        #spinButton:hover {
+            background-image: linear-gradient(to right, #ea580c, #f97316);
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px rgba(234, 88, 12, 0.7);
+        }
+        #spinButton:active {
+            transform: translateY(0);
+            box-shadow: 0 5px 15px rgba(249, 115, 22, 0.4);
+        }
+        #spinButton:disabled {
+            background-image: linear-gradient(to right, #4a5568, #718096); /* Darker disabled */
+            box-shadow: none;
+        }
+
+        /* Betting Input */
+        .bet-control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            width: 100%;
+            align-items: center;
+        }
+        .bet-input {
+            background-color: #4a5568; /* Darker input background */
+            color: #f0f2f5; /* Light text */
+            border: 1px solid #6b7280;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 1.1rem;
+            width: 100%;
+            max-width: 250px; /* Limit input width */
+            text-align: center;
+        }
+        .bet-input:focus {
+            outline: none;
+            border-color: #6366f1; /* Purple focus border */
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4);
+        }
+
+        .message-box {
+            background-color: #365314; /* Muted dark green for info */
+            border: 1px solid #4d7c0f;
+            color: #d9f99d; /* Light green text */
+            padding: 1rem;
+            border-radius: 1rem;
+            width: 100%;
+            text-align: center;
+            font-weight: 600;
+            margin-top: 1rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out, color 0.5s ease-in-out;
+        }
+        .message-box.error {
+            background-color: #7f1d1d; /* Muted dark red for error */
+            border: 1px solid #b91c1c;
+            color: #fca5a5; /* Light red text */
+        }
+        .message-box.info {
+            background-color: #1e3a8a; /* Muted dark blue for info */
+            border: 1px solid #2563eb;
+            color: #bfdbfe; /* Light blue text */
+        }
+        .credits-display, .wallet-display { /* Combined for common styling */
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f0f2f5; /* Light text */
+            background-color: #4a5568; /* Darker background for credits */
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            min-width: 150px;
+            text-align: center;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
+            margin: 0.5rem 0; /* Add margin for spacing */
+        }
+        .jackpot-display {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fca5a5; /* Reddish color for jackpot */
+            background-color: #4a1e1e; /* Darker red background */
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            min-width: 150px;
+            text-align: center;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+            border: 1px solid #ef4444;
+            animation: jackpot-pulse 2s infinite;
+        }
+        @keyframes jackpot-pulse {
+            0% { transform: scale(1); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2); }
+            50% { transform: scale(1.02); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 10px rgba(239, 68, 68, 0.7); }
+            100% { transform: scale(1); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2); }
+        }
+
+        .free-spins-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #bfdbfe;
+            background-color: #1e3a8a;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.5rem;
+            margin-top: 0.5rem;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+            border: 1px solid #2563eb;
+        }
+
+        .sound-control-button {
+            background-color: #4a5568; /* Darker grey for sound control */
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            border-radius: 0.75rem;
+            color: #f0f2f5; /* Light text */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.2s;
+            width: fit-content;
+        }
+        .sound-control-button:hover {
+            background-color: #6b7280;
+        }
+        .sound-control-button.muted {
+            background-color: #b91c1c; /* Dark red when muted */
+        }
+        .sound-control-button.muted:hover {
+            background-color: #dc2626;
+        }
+
+        /* Section dividers for clarity */
+        .game-section {
+            width: 100%;
+            border-top: 1px solid #4a5568;
+            padding-top: 1.5rem;
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .shop-items, .wallet-actions { /* General spacing for buttons */
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1rem;
+            width: 100%;
+            align-items: center; /* Center buttons in their section */
+        }
+        .shop-item-button, .wallet-button { /* Common button styling */
+            padding: 0.7rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+            width: 80%; /* Consistent width for shop/wallet buttons */
+            max-width: 300px;
+            text-align: center;
+        }
+
+        .shop-item-button {
+            background-image: linear-gradient(to right, #1e3a8a, #2563eb); /* Darker blue gradient */
+        }
+        .shop-item-button:hover {
+            background-image: linear-gradient(to right, #172554, #1e3a8a);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+        .shop-item-button:disabled {
+            background-image: linear-gradient(to right, #4a5568, #6b7280); /* Darker disabled */
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .new-game-button, .logout-button { /* Styling for utility buttons */
+            background-color: #047857; /* Emerald green for new game */
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+            border-radius: 0.75rem;
+            color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.2s;
+            width: fit-content;
+            margin-top: 1rem;
+        }
+        .new-game-button:hover, .logout-button:hover {
+            background-color: #065f46;
+        }
+
+        /* Login/Auth Section */
+        #authScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex; /* Ensure it's flex by default to be centered */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .auth-container {
+            background-color: #2d3748;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 90%;
+            max-width: 400px;
+            color: #e2e8f0;
+            text-align: center;
+        }
+        .auth-input {
+            background-color: #4a5568;
+            color: #f0f2f5;
+            border: 1px solid #6b7280;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 1.1rem;
+            width: 100%;
+            text-align: center;
+        }
+        .auth-button { /* Common styling for auth/modal close buttons */
+            background-image: linear-gradient(to right, #f97316, #fb923c);
+            padding: 0.75rem 1.5rem;
+            border-radius: 1rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: white;
+            transition: all 0.2s;
+        }
+        .auth-button:hover {
+            background-image: linear-gradient(to right, #ea580c, #f97316);
+            transform: translateY(-2px);
+        }
+
+        /* Achievements Section */
+        #achievementsModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1001; /* Above auth screen if both open */
+        }
+        .achievements-content {
+            background-color: #2d3748;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh; /* Max height for scroll */
+            overflow-y: auto; /* Scrollable if too many achievements */
+            color: #e2e8f0;
+        }
+        .achievement-item {
+            background-color: #4a5568;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #6b7280;
+        }
+        .achievement-item.completed {
+            background-color: #104a37; /* Darker green for completed */
+            border-color: #10b981;
+        }
+        .achievement-item .status {
+            font-weight: bold;
+            color: #ef4444; /* Red for not completed */
+        }
+        .achievement-item.completed .status {
+            color: #10b981; /* Green for completed */
+        }
+
+        /* Double or Nothing Modal */
+        #doubleOrNothingModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+        }
+        .double-or-nothing-content {
+            background-color: #2d3748;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 90%;
+            max-width: 450px;
+            color: #e2e8f0;
+            text-align: center;
+        }
+        .card-display {
+            font-size: 5rem;
+            line-height: 1;
+            margin: 1rem 0;
+        }
+        .card-button {
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 1rem;
+            transition: all 0.2s;
+        }
+        .card-button.red {
+            background-color: #ef4444; /* Red */
+            color: white;
+        }
+        .card-button.red:hover { background-color: #dc2626; transform: translateY(-2px); }
+        .card-button.black {
+            background-color: #1f2937; /* Dark black */
+            color: white;
+        }
+        .card-button.black:hover { background-color: #000; transform: translateY(-2px); }
+        .collect-button {
+            background-color: #10b981;
+        }
+        .collect-button:hover { background-color: #059669; }
+
+        /* Wallet Modal */
+        #walletModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+        .wallet-content {
+            background-color: #2d3748;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 90%;
+            max-width: 400px;
+            color: #e2e8f0;
+            text-align: center;
+        }
+        .wallet-input {
+            background-color: #4a5568;
+            color: #f0f2f5;
+            border: 1px solid #6b7280;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 1.1rem;
+            width: 100%;
+            text-align: center;
+        }
+        .wallet-button.deposit {
+            background-image: linear-gradient(to right, #059669, #10b981); /* Green for deposit */
+        }
+        .wallet-button.deposit:hover { transform: translateY(-2px); background-image: linear-gradient(to right, #047857, #0d9488); }
+
+        .wallet-button.withdraw {
+            background-image: linear-gradient(to right, #dc2626, #ef4444); /* Red for withdraw */
+        }
+        .wallet-button.withdraw:hover { transform: translateY(-2px); background-image: linear-gradient(to right, #b91c1c, #dc2626); }
+
+
+        /* Themes */
+        .light-theme {
+            background-color: #f0f2f5;
+            color: #1a202c;
+        }
+        .light-theme .container {
+            background-color: #ffffff;
+            border-color: #e2e8f0;
+        }
+        .light-theme h1 {
+            color: #1a202c;
+        }
+        .light-theme .credits-display, .light-theme .wallet-display {
+            background-color: #e2e8f0;
+            color: #4b5563;
+        }
+        .light-theme .jackpot-display {
+            background-color: #ffe0b2;
+            border-color: #ff9800;
+            color: #e65100;
+        }
+        .light-theme .free-spins-display {
+            background-color: #e0f2fe;
+            border-color: #90cdf4;
+            color: #2b6cb0;
+        }
+        .light-theme .slot-reel {
+            background-color: #f9fafb;
+            color: #333;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .light-theme .sound-control-button {
+            background-color: #94a3b8;
+            color: white;
+        }
+        .light-theme .message-box {
+            background-color: #ecfdf5;
+            border-color: #6ee7b7;
+            color: #065f46;
+        }
+        .light-theme .message-box.error {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+            color: #b91c1c;
+        }
+        .light-theme .message-box.info {
+            background-color: #e0f2fe;
+            border-color: #90cdf4;
+            color: #2b6cb0;
+        }
+        .light-theme .bet-input {
+            background-color: #f3f4f6;
+            color: #1a202c;
+            border-color: #d1d5db;
+        }
+        .light-theme .shop-item-button {
+            background-image: linear-gradient(to right, #2563eb, #3b82f6);
+        }
+        .light-theme .shop-item-button:disabled {
+            background-image: linear-gradient(to right, #93c5fd, #bfdbfe);
+        }
+        .light-theme .auth-container, .light-theme .achievements-content, .light-theme .double-or-nothing-content, .light-theme .wallet-content {
+            background-color: #ffffff;
+            color: #1a202c;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        .light-theme .auth-input, .light-theme .wallet-input {
+            background-color: #f3f4f6;
+            color: #1a202c;
+            border-color: #d1d5db;
+        }
+        .light-theme .achievement-item {
+            background-color: #f3f4f6;
+            border-color: #d1d5db;
+            color: #374151;
+        }
+        .light-theme .achievement-item.completed {
+            background-color: #d1fae5;
+            border-color: #6ee7b7;
+        }
+        .light-theme .wallet-button.deposit { background-image: linear-gradient(to right, #34d399, #6ee7b7); }
+        .light-theme .wallet-button.deposit:hover { background-image: linear-gradient(to right, #10b981, #34d399); }
+        .light-theme .wallet-button.withdraw { background-image: linear-gradient(to right, #f87171, #ef4444); }
+        .light-theme .wallet-button.withdraw:hover { background-image: linear-gradient(to right, #ef4444, #f87171); }
+
+        .golden-theme {
+            background-color: #a18838; /* Dark gold */
+            color: #fff;
+        }
+        .golden-theme .container {
+            background-color: #bf9b30; /* Medium gold */
+            border-color: #d4af37;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+        .golden-theme h1 {
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
+        }
+        .golden-theme .credits-display, .golden-theme .wallet-display {
+            background-color: #d4af37;
+            color: #333;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        .golden-theme .jackpot-display {
+            background-color: #ffc107; /* Brighter gold for golden theme jackpot */
+            border-color: #ffeb3b;
+            color: #8d6e63;
+        }
+        .golden-theme .free-spins-display {
+            background-color: #ffecb3;
+            border-color: #ffe082;
+            color: #ff8f00;
+        }
+        .golden-theme .slot-reel {
+            background-color: #8b792e; /* Darker gold for reels */
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6);
+        }
+        .golden-theme .sound-control-button {
+            background-color: #d4af37;
+            color: #333;
+        }
+        .golden-theme .shop-item-button:hover { transform: translateY(-2px); }
+        .golden-theme .shop-item-button:disabled {
+            background-image: linear-gradient(to right, #a18838, #c7a2b);
+        }
+        .golden-theme .auth-container, .golden-theme .achievements-content, .golden-theme .double-or-nothing-content, .golden-theme .wallet-content {
+            background-color: #bf9b30;
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+        .golden-theme .auth-input, .golden-theme .wallet-input {
+            background-color: #d4af37;
+            color: #333;
+            border-color: #e0b445;
+        }
+        .golden-theme .achievement-item {
+            background-color: #d4af37;
+            border-color: #e0b445;
+            color: #333;
+        }
+        .golden-theme .achievement-item.completed {
+            background-color: #e6c26b;
+            border-color: #f7e09e;
+        }
+        .golden-theme .wallet-button.deposit { background-image: linear-gradient(to right, #92d437, #b2db66); }
+        .golden-theme .wallet-button.deposit:hover { background-image: linear-gradient(to right, #7cb342, #92d437); }
+        .golden-theme .wallet-button.withdraw { background-image: linear-gradient(to right, #ff8080, #ff4d4d); }
+        .golden-theme .wallet-button.withdraw:hover { background-image: linear-gradient(to right, #ff4d4d, #ff8080); }
+
+    </style>
+</head>
+<body>
+    <!-- Authentication Screen (visible by default) -->
+    <div id="authScreen">
+        <div class="auth-container">
+            <h2 class="text-3xl font-bold mb-4">Добро пожаловать!</h2>
+            <p class="text-sm mb-4">Введите ваш никнейм или зарегистрируйтесь.</p>
+            <input type="text" id="nicknameInput" class="auth-input" placeholder="Введите ваш никнейм">
+            <button id="loginButton" class="auth-button">Войти / Зарегистрироваться</button>
+            <div id="authMessage" class="text-red-400 text-sm mt-2 hidden"></div>
+        </div>
+    </div>
+
+    <!-- Main Game Container (hidden until logged in) -->
+    <div class="container hidden" id="gameContainer">
+        <h1 class="text-4xl font-extrabold mb-4">🎰 Игровой автомат 🎰</h1>
+        <p id="loggedInUser" class="text-lg font-semibold mb-4 text-gray-300">Игрок: </p>
+
+        <div class="w-full flex flex-wrap justify-between items-center mb-4 gap-2">
+            <div id="creditsDisplay" class="credits-display flex-grow">Кредиты: 100</div>
+            <div id="jackpotDisplay" class="jackpot-display flex-grow">Джекпот: 1000</div>
+        </div>
+
+        <div id="freeSpinsDisplay" class="free-spins-display hidden">Бесплатные вращения: 0</div>
+
+
+        <div class="slot-reels-container">
+            <div id="reel1" class="slot-reel">🍒</div>
+            <div id="reel2" class="slot-reel">🍋</div>
+            <div id="reel3" class="slot-reel">🍊</div>
+        </div>
+
+        <div class="bet-control-group game-section">
+            <label for="betInput" class="text-md font-semibold text-gray-300">Ваша ставка:</label>
+            <input type="number" id="betInput" class="bet-input" value="20" min="10" step="10">
+            <button id="spinButton">Крутить! (20 кредитов)</button>
+        </div>
+
+        <div id="resultBox" class="message-box hidden game-section">
+            <span id="resultText" class="result-text"></span>
+        </div>
+
+        <div id="messageBox" class="message-box hidden info game-section">
+            <span id="messageText"></span>
+        </div>
+
+        <!-- Shop Section -->
+        <div class="shop-section game-section">
+            <h2 class="text-2xl font-bold mb-4">Магазин</h2>
+            <div class="shop-items">
+                <button id="buyLightTheme" class="shop-item-button">Светлая тема (50 кредитов)</button>
+                <button id="buyGoldenTheme" class="shop-item-button">Золотая тема (75 кредитов)</button>
+                <button id="buyMoneyBagSymbol" class="shop-item-button">Разблокировать 💰 (100 кредитов)</button>
+            </div>
+        </div>
+
+        <!-- Wallet Section -->
+        <div class="wallet-section game-section">
+            <h2 class="text-2xl font-bold mb-4">Виртуальный кошелек</h2>
+            <div class="shop-items"> <!-- Reusing shop-items for button group layout -->
+                <button id="openWalletButton" class="shop-item-button">Открыть кошелек</button>
+            </div>
+        </div>
+
+        <div class="w-full flex flex-wrap justify-around mt-4 gap-2">
+            <button id="muteButton" class="sound-control-button flex-grow">🎶 Звук: Вкл</button>
+            <button id="achievementsButton" class="sound-control-button flex-grow">🏆 Достижения</button>
+            <button id="dailyBonusButton" class="sound-control-button flex-grow">🎁 Ежедневный бонус</button>
+        </div>
+        <button id="logoutButton" class="new-game-button mt-4">Выйти</button>
+        <button id="newGameButton" class="new-game-button mt-2">Начать новую игру (Сброс)</button>
+    </div>
+
+    <!-- Achievements Modal -->
+    <div id="achievementsModal">
+        <div class="achievements-content">
+            <h2 class="text-3xl font-bold mb-4">🏆 Ваши достижения 🏆</h2>
+            <div id="achievementsList">
+                <!-- Achievements will be loaded here -->
+            </div>
+            <button id="closeAchievementsModal" class="auth-button mt-6">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- Double or Nothing Modal -->
+    <div id="doubleOrNothingModal">
+        <div class="double-or-nothing-content">
+            <h2 class="text-3xl font-bold mb-4">Удвоить или ничего!</h2>
+            <p class="text-xl">Ваш выигрыш: <span id="currentWinAmount">0</span> кредитов</p>
+            <p class="text-md text-gray-400 mb-4" id="doubleOrNothingMessage"></p>
+            <div class="card-display" id="cardDisplay">🂠</div>
+            <div class="flex gap-4 justify-center w-full">
+                <button id="redCardButton" class="card-button red">Красный</button>
+                <button id="blackCardButton" class="card-button black">Черный</button>
+            </div>
+            <div class="flex gap-4 justify-center w-full mt-4">
+                <button id="collectWinningsButton" class="auth-button collect-button">Забрать выигрыш</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Modal -->
+    <div id="walletModal">
+        <div class="wallet-content">
+            <h2 class="text-3xl font-bold mb-4">Виртуальный кошелек</h2>
+            <p class="text-xl">Кредиты казино: <span id="walletCasinoCredits">0</span></p>
+            <p class="text-xl">Баланс кошелька: <span id="walletCurrentBalance">0</span></p>
+            <input type="number" id="walletAmountInput" class="wallet-input" placeholder="Сумма (кратная 10)">
+            <div class="flex flex-col gap-4 justify-center w-full wallet-actions">
+                <button id="depositButton" class="wallet-button deposit">Пополнить кредиты (из кошелька)</button>
+                <button id="withdrawButton" class="wallet-button withdraw">Вывести в кошелек (из казино)</button>
+            </div>
+            <div id="walletMessage" class="text-sm mt-2 hidden text-red-400"></div>
+            <button id="closeWalletModal" class="auth-button mt-6">Закрыть</button>
+        </div>
+    </div>
+
+
+    <script>
+        // DOM Elements
+        const authScreen = document.getElementById('authScreen');
+        const nicknameInput = document.getElementById('nicknameInput');
+        const loginButton = document.getElementById('loginButton');
+        const authMessage = document.getElementById('authMessage');
+        const gameContainer = document.getElementById('gameContainer');
+        const loggedInUserDisplay = document.getElementById('loggedInUser');
+
+        const reel1 = document.getElementById('reel1');
+        const reel2 = document.getElementById('reel2');
+        const reel3 = document.getElementById('reel3');
+        const spinButton = document.getElementById('spinButton');
+        const resultBox = document.getElementById('resultBox');
+        const resultText = document.getElementById('resultText');
+        const messageBox = document.getElementById('messageBox');
+        const messageText = document.getElementById('messageText');
+        const creditsDisplay = document.getElementById('creditsDisplay');
+        const jackpotDisplay = document.getElementById('jackpotDisplay');
+        const freeSpinsDisplay = document.getElementById('freeSpinsDisplay');
+        const muteButton = document.getElementById('muteButton');
+        const newGameButton = document.getElementById('newGameButton');
+        const logoutButton = document.getElementById('logoutButton');
+        const betInput = document.getElementById('betInput');
+
+        // Shop Buttons
+        const buyLightThemeButton = document.getElementById('buyLightTheme');
+        const buyGoldenThemeButton = document.getElementById('buyGoldenTheme');
+        const buyMoneyBagSymbolButton = document.getElementById('buyMoneyBagSymbol');
+
+        // Achievements Modal
+        const achievementsButton = document.getElementById('achievementsButton');
+        const achievementsModal = document.getElementById('achievementsModal');
+        const achievementsList = document.getElementById('achievementsList');
+        const closeAchievementsModal = document.getElementById('closeAchievementsModal');
+
+        // Daily Bonus
+        const dailyBonusButton = document.getElementById('dailyBonusButton');
+
+        // Double or Nothing Modal
+        const doubleOrNothingModal = document.getElementById('doubleOrNothingModal');
+        const currentWinAmountDisplay = document.getElementById('currentWinAmount');
+        const doubleOrNothingMessage = document.getElementById('doubleOrNothingMessage');
+        const cardDisplay = document.getElementById('cardDisplay');
+        const redCardButton = document.getElementById('redCardButton');
+        const blackCardButton = document.getElementById('blackCardButton');
+        const collectWinningsButton = document.getElementById('collectWinningsButton');
+
+        // Wallet Modal
+        const openWalletButton = document.getElementById('openWalletButton');
+        const walletModal = document.getElementById('walletModal');
+        const walletCasinoCredits = document.getElementById('walletCasinoCredits'); // New: to show current casino credits in wallet modal
+        const walletCurrentBalance = document.getElementById('walletCurrentBalance');
+        const walletAmountInput = document.getElementById('walletAmountInput');
+        const depositButton = document.getElementById('depositButton');
+        const withdrawButton = document.getElementById('withdrawButton');
+        const walletMessage = document.getElementById('walletMessage');
+        const closeWalletModal = document.getElementById('closeWalletModal');
+
+
+        // Game state variables (will be populated from current user's data)
+        let currentUserNickname = null;
+        let credits; // Casino credits for playing
+        let walletBalance; // Separate balance for wallet
+        let progressiveJackpot;
+        let freeSpinsRemaining;
+        let currentBet = 20; // Default, can be changed by user
+        let hasLightTheme;
+        let hasGoldenTheme;
+        let hasMoneyBagSymbol;
+        let activeTheme;
+        let isSpinning = false;
+        let isMuted = false;
+        const spinDuration = 2000;
+
+        let doubleOrNothingCurrentWinnings = 0;
+        const doubleOrNothingMaxAttempts = 3;
+        let doubleOrNothingAttempts = 0;
+
+        // Shared game data (not user-specific)
+        const initialCredits = 100;
+        const initialWalletBalance = 0; // New: initial wallet balance
+        const initialJackpot = 1000;
+        const spinCostMultiplier = 0.05;
+
+        // Define symbols globally
+        const baseSymbols = ['🍒', '🍋', '🍊', '🍇', '🔔', '💎', '🍀', '⭐', '7️⃣', '🌟']; // ⭐ Wild, 7️⃣ Jackpot, 🌟 Free Spins
+        let unlockedSymbols = []; // Will contain '💰' if unlocked
+        let allAvailableSymbols = [...baseSymbols]; // This will be updated based on unlockedSymbols
+
+
+        // Global object to store all users data
+        let allUsersData = {};
+
+
+        // --- Achievements Definitions ---
+        const ACHIEVEMENTS = [
+            { id: 'first_spin', name: 'Первое вращение', description: 'Сделать первое вращение на автомате.', check: (stats) => stats.totalSpins >= 1 },
+            { id: 'spin_master_10', name: 'Мастер спинов (10)', description: 'Сделать 10 вращений.', check: (stats) => stats.totalSpins >= 10 },
+            { id: 'spin_master_100', name: 'Мастер спинов (100)', description: 'Сделать 100 вращений.', check: (stats) => stats.totalSpins >= 100 },
+            { id: 'first_win', name: 'Первый выигрыш', description: 'Выиграть в первый раз.', check: (stats) => stats.totalCreditsWon > 0 },
+            { id: 'credits_thousand', name: 'Тысяча кредитов', description: 'Накопить 1000 кредитов.', check: (stats, userCredits) => userCredits >= 1000 },
+            { id: 'jackpot_hunter', name: 'Охотник за джекпотом', description: 'Выиграть прогрессивный джекпот.', check: (stats) => stats.jackpotsWon >= 1 },
+            { id: 'lucky_double', name: 'Двойная удача', description: 'Успешно удвоить выигрыш в мини-игре.', check: (stats) => stats.doubleOrNothingWins >= 1 },
+            { id: 'shopaholic', name: 'Шопоголик', description: 'Купить все предметы в магазине.', check: (stats, userCredits, purchasedItems) => purchasedItems.lightTheme && purchasedItems.goldenTheme && purchasedItems.moneyBagSymbol },
+            { id: 'daily_bonus_collector', name: 'Коллекционер бонусов', description: 'Получить ежедневный бонус.', check: (stats, userCredits, purchasedItems, freeSpins, lastDailyBonusDate) => {
+                const today = new Date().toISOString().slice(0, 10);
+                return lastDailyBonusDate === today;
+            }},
+            { id: 'wallet_deposit', name: 'Первое пополнение', description: 'Перевести средства из кошелька в казино.', check: (stats) => stats.walletDeposits > 0 },
+            { id: 'wallet_withdraw', name: 'Первый вывод', description: 'Вывести средства из казино в кошелек.', check: (stats) => stats.walletWithdrawals > 0 },
+        ];
+
+
+        // --- Local Storage Functions ---
+        function saveAllUsersData() {
+            localStorage.setItem('slotMachineUsersData', JSON.stringify(allUsersData));
+        }
+
+        function loadAllUsersData() {
+            const savedData = localStorage.getItem('slotMachineUsersData');
+            if (savedData) {
+                try {
+                    allUsersData = JSON.parse(savedData);
+                } catch (e) {
+                    console.error("Error parsing saved user data, resetting:", e);
+                    allUsersData = {};
+                }
+            } else {
+                allUsersData = {};
+            }
+            console.log("Loaded all users data:", allUsersData);
+        }
+
+        function loadCurrentUserGame() {
+            if (!currentUserNickname) {
+                console.error("loadCurrentUserGame called without currentUserNickname. Aborting.");
+                return;
+            }
+
+            console.log("Attempting to load game for user:", currentUserNickname);
+            if (!allUsersData[currentUserNickname]) {
+                // New user - initialize their data
+                allUsersData[currentUserNickname] = {
+                    credits: initialCredits,
+                    walletBalance: initialWalletBalance, // Initialize wallet balance for new user
+                    progressiveJackpot: initialJackpot,
+                    freeSpinsRemaining: 0,
+                    lastDailyBonusDate: null,
+                    purchasedItems: {
+                        lightTheme: false,
+                        goldenTheme: false,
+                        moneyBagSymbol: false,
+                    },
+                    activeTheme: 'dark',
+                    achievements: {},
+                    stats: {
+                        totalSpins: 0,
+                        totalCreditsWon: 0,
+                        jackpotsWon: 0,
+                        doubleOrNothingWins: 0,
+                        doubleOrNothingLosses: 0,
+                        walletDeposits: 0, // New stat
+                        walletWithdrawals: 0, // New stat
+                    }
+                };
+                showMessage(`Добро пожаловать, ${currentUserNickname}!`, 'info');
+                console.log("New user data initialized:", allUsersData[currentUserNickname]);
+            } else {
+                console.log("Existing user data loaded for:", currentUserNickname, allUsersData[currentUserNickname]);
+                // Ensure new walletBalance and stats fields exist for old users
+                if (typeof allUsersData[currentUserNickname].walletBalance === 'undefined') {
+                    allUsersData[currentUserNickname].walletBalance = initialWalletBalance;
+                }
+                if (typeof allUsersData[currentUserNickname].stats.walletDeposits === 'undefined') {
+                    allUsersData[currentUserNickname].stats.walletDeposits = 0;
+                }
+                if (typeof allUsersData[currentUserNickname].stats.walletWithdrawals === 'undefined') {
+                    allUsersData[currentUserNickname].stats.walletWithdrawals = 0;
+                }
+            }
+
+            // Assign values from loaded data to global game state variables
+            credits = allUsersData[currentUserNickname].credits;
+            walletBalance = allUsersData[currentUserNickname].walletBalance; // Load wallet balance
+            progressiveJackpot = allUsersData[currentUserNickname].progressiveJackpot;
+            freeSpinsRemaining = allUsersData[currentUserNickname].freeSpinsRemaining;
+
+            hasLightTheme = allUsersData[currentUserNickname].purchasedItems.lightTheme;
+            hasGoldenTheme = allUsersData[currentUserNickname].purchasedItems.goldenTheme;
+            hasMoneyBagSymbol = allUsersData[currentUserNickname].purchasedItems.moneyBagSymbol;
+            applyTheme(allUsersData[currentUserNickname].activeTheme);
+
+            // Rebuild allAvailableSymbols based on unlocked items
+            unlockedSymbols = [];
+            if (hasMoneyBagSymbol) {
+                unlockedSymbols.push('💰');
+            }
+            updateAllAvailableSymbols();
+
+            loggedInUserDisplay.textContent = `Игрок: ${currentUserNickname}`;
+            // All UI updates must happen *after* global variables are assigned
+            updateCreditsDisplay();
+            updateJackpotDisplay();
+            updateFreeSpinsDisplay();
+            updateShopButtons();
+            updateAchievements();
+            checkDailyBonus(false); // Check for daily bonus on login, without showing success message if already claimed
+
+            // Ensure bet input and spin button text are correctly set for the current user
+            betInput.value = currentBet; // Use currentBet from global default or previous session if loaded
+            spinButton.textContent = `Крутить! (${currentBet} кредитов)`;
+
+            gameContainer.style.display = 'flex'; // Show game UI
+            authScreen.style.display = 'none'; // Hide auth screen
+            localStorage.setItem('lastLoggedInSlotMachineUser', currentUserNickname); // Save last logged in user
+            saveAllUsersData(); // Save initial state if new user or updated
+            console.log("Game UI shown for user:", currentUserNickname);
+        }
+
+        function saveCurrentUserGame() {
+            if (currentUserNickname && allUsersData[currentUserNickname]) {
+                // Ensure all current global game state variables are pushed back to the user's data object
+                allUsersData[currentUserNickname].credits = credits;
+                allUsersData[currentUserNickname].walletBalance = walletBalance; // Save wallet balance
+                allUsersData[currentUserNickname].progressiveJackpot = progressiveJackpot;
+                allUsersData[currentUserNickname].freeSpinsRemaining = freeSpinsRemaining;
+                allUsersData[currentUserNickname].purchasedItems.lightTheme = hasLightTheme;
+                allUsersData[currentUserNickname].purchasedItems.goldenTheme = hasGoldenTheme;
+                allUsersData[currentUserNickname].purchasedItems.moneyBagSymbol = hasMoneyBagSymbol;
+                allUsersData[currentUserNickname].activeTheme = activeTheme;
+
+                saveAllUsersData();
+                console.log("Game state saved for:", currentUserNickname);
+            } else {
+                console.warn("Attempted to save game without a current user or invalid user data.");
+            }
+        }
+
+        function logoutCurrentUser() {
+            saveCurrentUserGame(); // Save before logging out
+            currentUserNickname = null;
+            localStorage.removeItem('lastLoggedInSlotMachineUser'); // Clear last logged in user
+            authScreen.style.display = 'flex'; // Show auth screen
+            gameContainer.style.display = 'none'; // Hide game UI
+            nicknameInput.value = ''; // Clear input
+            authMessage.classList.add('hidden'); // Clear auth message
+            showMessage('Вы вышли из системы.', 'info');
+            console.log("User logged out.");
+        }
+
+        function newGame() {
+            if (confirm('Вы уверены, что хотите начать новую игру? Ваш текущий прогресс будет потерян.')) {
+                if (currentUserNickname && allUsersData[currentUserNickname]) {
+                    // Reset current user's data to initial state
+                    allUsersData[currentUserNickname] = {
+                        credits: initialCredits,
+                        walletBalance: initialWalletBalance, // Reset wallet balance
+                        progressiveJackpot: initialJackpot,
+                        freeSpinsRemaining: 0,
+                        lastDailyBonusDate: null,
+                        purchasedItems: {
+                            lightTheme: false,
+                            goldenTheme: false,
+                            moneyBagSymbol: false,
+                        },
+                        activeTheme: 'dark',
+                        achievements: {},
+                        stats: {
+                            totalSpins: 0,
+                            totalCreditsWon: 0,
+                            jackpotsWon: 0,
+                            doubleOrNothingWins: 0,
+                            doubleOrNothingLosses: 0,
+                            walletDeposits: 0,
+                            walletWithdrawals: 0,
+                        }
+                    };
+                    // Reload all game state for the current user from the newly reset data
+                    loadCurrentUserGame();
+                    showMessage('Новая игра начата!', 'info');
+                    console.log("New game started for:", currentUserNickname);
+                } else {
+                    console.warn("Attempted to start new game without a current user.");
+                }
+            }
+        }
+
+        // --- Daily Bonus Functions ---
+        function checkDailyBonus(showClaimedMessage = true) {
+            if (!currentUserNickname || !allUsersData[currentUserNickname]) return;
+
+            const today = new Date().toISOString().slice(0, 10); // Moreau-MM-DD
+            const lastBonusDate = allUsersData[currentUserNickname].lastDailyBonusDate;
+
+            if (lastBonusDate !== today) {
+                const bonusAmount = 50; // Example bonus
+                credits += bonusAmount;
+                allUsersData[currentUserNickname].lastDailyBonusDate = today; // Update in user's data
+                updateCreditsDisplay(); // This will save
+                showMessage(`🎁 Ежедневный бонус! Вы получили ${bonusAmount} кредитов!`, 'info');
+                console.log("Daily bonus claimed.");
+            } else if (showClaimedMessage) {
+                showMessage('Вы уже получили ежедневный бонус сегодня.', 'info');
+                console.log("Daily bonus already claimed today.");
+            }
+        }
+
+
+        // --- Sound Setup (Tone.js) ---
+        let spinNoise;
+        let winChime;
+        let jackpotWinChime;
+        let freeSpinChime;
+        let backgroundAmbient;
+        let cardFlipSound;
+        let correctSound;
+        let incorrectSound;
+
+        let audioInitialized = false; // Flag to ensure audio setup runs only once
+
+        async function setupAudio() {
+            if (audioInitialized) {
+                console.log("Audio already initialized.");
+                return;
+            }
+
+            try {
+                await Tone.start();
+                console.log("Audio context started.");
+
+                spinNoise = new Tone.NoiseSynth({
+                    envelope: { attack: 0.005, decay: 0.08, sustain: 0.0, release: 0.1 },
+                    noise: { type: "brown" }
+                }).toDestination();
+
+                winChime = new Tone.Synth({
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.01, decay: 0.3, sustain: 0.0, release: 0.8 }
+                }).chain(new Tone.Reverb(0.5).toDestination(), Tone.Destination);
+
+                jackpotWinChime = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "square" },
+                    envelope: { attack: 0.1, decay: 0.5, sustain: 0.0, release: 1 }
+                }).toDestination();
+
+                freeSpinChime = new Tone.Synth({
+                    oscillator: { type: "sine" },
+                    envelope: { attack: 0.01, decay: 0.2, sustain: 0.0, release: 0.5 }
+                }).toDestination();
+
+                backgroundAmbient = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "sine" },
+                    envelope: { attack: 2, decay: 2, sustain: 0.5, release: 5 },
+                    volume: -20
+                }).toDestination();
+
+                // Use Tone.Loop for background ambient to ensure it plays after context is ready and loops
+                new Tone.Loop(time => {
+                    if (!isMuted) {
+                        backgroundAmbient.triggerAttackRelease(["C3", "G3", "C4"], "4n", time); // Sustained low chord
+                    }
+                }, "4n").start(0); // Loop every 4 notes (1n means 1 measure)
+                Tone.Transport.start(); // Start the Tone.js transport for the loop to play
+
+                cardFlipSound = new Tone.NoiseSynth({
+                    envelope: { attack: 0.001, decay: 0.05, sustain: 0.0, release: 0.05 },
+                    noise: { type: "white" }, volume: -10
+                }).toDestination();
+
+                correctSound = new Tone.Synth({
+                    oscillator: { type: "sine" },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.0, release: 0.2 },
+                    volume: -5
+                }).toDestination();
+
+                incorrectSound = new Tone.Synth({
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.0, release: 0.2 },
+                    volume: -5
+                }).toDestination();
+
+                audioInitialized = true;
+                console.log("Audio initialization complete.");
+
+            } catch (error) {
+                console.error("Failed to start audio context or setup audio:", error);
+                showMessage("Ошибка инициализации звука. Пожалуйста, обновите страницу.", "error");
+            }
+        }
+
+        function playSound(type) {
+            if (isMuted || Tone.context.state !== 'running' || !audioInitialized) {
+                return;
+            }
+            try {
+                if (type === 'spin' && spinNoise) spinNoise.triggerAttackRelease("16n");
+                else if (type === 'win' && winChime) { winChime.triggerAttackRelease("G5", "8n"); winChime.triggerAttackRelease("C6", "4n", "+0.2"); }
+                else if (type === 'jackpot' && jackpotWinChime) jackpotWinChime.triggerAttackRelease(["C4", "E4", "G4", "C5"], "1n");
+                else if (type === 'freeSpin' && freeSpinChime) { freeSpinChime.triggerAttackRelease("E5", "8n"); freeSpinChime.triggerAttackRelease("G5", "8n", "+0.1"); freeSpinChime.triggerAttackRelease("C6", "4n", "+0.2"); }
+                else if (type === 'cardFlip' && cardFlipSound) cardFlipSound.triggerAttackRelease("32n");
+                else if (type === 'correct' && correctSound) correctSound.triggerAttackRelease("C5", "8n");
+                else if (type === 'incorrect' && incorrectSound) incorrectSound.triggerAttackRelease("C3", "8n");
+            } catch (e) {
+                console.warn("Error playing sound:", e);
+            }
+        }
+
+        function toggleMute() {
+            if (!audioInitialized) {
+                setupAudio();
+            }
+
+            isMuted = !isMuted;
+            Tone.Destination.mute = isMuted;
+            if (isMuted) {
+                muteButton.textContent = '🔇 Звук: Выкл';
+                muteButton.classList.add('muted');
+                console.log("Audio muted.");
+            } else {
+                muteButton.textContent = '🎶 Звук: Вкл';
+                muteButton.classList.remove('muted');
+                console.log("Audio unmuted.");
+            }
+        }
+
+        // --- Core Game Functions ---
+        function updateCreditsDisplay() {
+            creditsDisplay.textContent = `Кредиты: ${credits}`;
+            if (currentUserNickname && allUsersData[currentUserNickname]) {
+                allUsersData[currentUserNickname].credits = credits;
+            }
+            // Update wallet modal display if it's open
+            if (walletModal.style.display === 'flex') {
+                walletCasinoCredits.textContent = credits;
+            }
+
+            if (credits < currentBet && !isFreeSpinMode) {
+                spinButton.disabled = true;
+                spinButton.classList.add('opacity-50', 'cursor-not-allowed');
+                showMessage('Недостаточно кредитов для вашей ставки!', 'error');
+            } else if (!isSpinning) {
+                spinButton.disabled = false;
+                spinButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                hideMessage();
+            }
+            updateShopButtons();
+            updateAchievements();
+            saveCurrentUserGame();
+        }
+
+        function updateWalletDisplay() {
+            walletCurrentBalance.textContent = walletBalance;
+            if (currentUserNickname && allUsersData[currentUserNickname]) {
+                allUsersData[currentUserNickname].walletBalance = walletBalance;
+            }
+            // Update casino credits display in wallet modal if open
+            if (walletModal.style.display === 'flex') {
+                 walletCasinoCredits.textContent = credits;
+            }
+            saveCurrentUserGame();
+        }
+
+        function updateJackpotDisplay() {
+            jackpotDisplay.textContent = `Джекпот: ${Math.floor(progressiveJackpot)}`;
+            if (currentUserNickname && allUsersData[currentUserNickname]) {
+                allUsersData[currentUserNickname].progressiveJackpot = progressiveJackpot;
+            }
+            saveCurrentUserGame();
+        }
+
+        function updateFreeSpinsDisplay() {
+            if (freeSpinsRemaining > 0) {
+                freeSpinsDisplay.textContent = `Бесплатные вращения: ${freeSpinsRemaining}`;
+                freeSpinsDisplay.classList.remove('hidden');
+                spinButton.disabled = false;
+                spinButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                showMessage(`У вас ${freeSpinsRemaining} бесплатных вращений!`, 'info');
+            } else {
+                freeSpinsDisplay.classList.add('hidden');
+                isFreeSpinMode = false;
+                updateCreditsDisplay(); // Check normal spin button state
+            }
+            if (currentUserNickname && allUsersData[currentUserNickname]) {
+                allUsersData[currentUserNickname].freeSpinsRemaining = freeSpinsRemaining;
+            }
+            saveCurrentUserGame();
+        }
+
+        function updateAllAvailableSymbols() {
+            allAvailableSymbols = [...baseSymbols];
+            if (hasMoneyBagSymbol) {
+                allAvailableSymbols.push('💰');
+            }
+            console.log("Available symbols updated:", allAvailableSymbols);
+        }
+
+        function showMessage(message, type = 'info') {
+            messageText.textContent = message;
+            messageBox.classList.remove('hidden', 'error', 'info');
+            if (type === 'error') {
+                messageBox.classList.add('error');
+            } else if (type === 'info') {
+                messageBox.classList.add('info');
+            } else {
+            }
+            messageBox.classList.remove('hidden');
+        }
+
+        function hideMessage() {
+            messageBox.classList.add('hidden');
+            messageText.textContent = '';
+        }
+
+        function hideResult() {
+            resultBox.classList.add('hidden');
+            resultText.textContent = '';
+        }
+
+        function getRandomSymbol() {
+            if (!allAvailableSymbols || allAvailableSymbols.length === 0) {
+                console.error("allAvailableSymbols is empty or not defined! Falling back to default symbols.");
+                allAvailableSymbols = [...baseSymbols]; // Fallback to base symbols
+                if (allAvailableSymbols.length === 0) return '❓'; // Hard fallback
+            }
+            const randomIndex = Math.floor(Math.random() * allAvailableSymbols.length);
+            return allAvailableSymbols[randomIndex];
+        }
+
+        function animateSingleReel(reelElement, duration, finalSymbol) {
+            let startTime = null;
+            let interval = 50;
+            let animationFrameId;
+
+            function animate(currentTime) {
+                if (!startTime) startTime = currentTime;
+                const elapsed = currentTime - startTime;
+
+                if (elapsed < duration) {
+                    if (elapsed % interval < interval / 2) {
+                         reelElement.textContent = getRandomSymbol();
+                    }
+                    animationFrameId = requestAnimationFrame(animate);
+                } else {
+                    reelElement.textContent = finalSymbol;
+                    cancelAnimationFrame(animationFrameId);
+                }
+            }
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        function spin() {
+            if (isSpinning) return;
+
+            if (!audioInitialized) { // Initialize audio on first spin attempt
+                setupAudio();
+            }
+
+            const betAmount = parseInt(betInput.value);
+            if (isNaN(betAmount) || betAmount < 10 || betAmount % 10 !== 0) {
+                showMessage('Ставка должна быть числом, не менее 10 и кратной 10!', 'error');
+                return;
+            }
+            currentBet = betAmount;
+
+            if (credits < currentBet && !isFreeSpinMode) {
+                showMessage('Недостаточно кредитов для вашей ставки!', 'error');
+                return;
+            }
+            performSpin();
+        }
+
+        function performSpin() {
+            isSpinning = true;
+            spinButton.disabled = true;
+            hideMessage();
+            hideResult();
+            playSound('spin');
+            showMessage('Крутим барабаны...', 'info');
+
+            if (!isFreeSpinMode) {
+                credits -= currentBet;
+                progressiveJackpot += currentBet * spinCostMultiplier;
+                allUsersData[currentUserNickname].stats.totalSpins++;
+            } else {
+                freeSpinsRemaining--;
+                showMessage(`Бесплатные вращения: ${freeSpinsRemaining} осталось.`, 'info');
+            }
+
+            updateCreditsDisplay();
+            updateJackpotDisplay();
+            updateFreeSpinsDisplay();
+
+            const finalSymbols = [
+                getRandomSymbol(),
+                getRandomSymbol(),
+                getRandomSymbol()
+            ];
+
+            animateSingleReel(reel1, spinDuration, finalSymbols[0]);
+            animateSingleReel(reel2, spinDuration + 200, finalSymbols[1]);
+            animateSingleReel(reel3, spinDuration + 400, finalSymbols[2]);
+
+            setTimeout(() => {
+                // Ensure initial symbols are displayed after animations complete
+                reel1.textContent = finalSymbols[0];
+                reel2.textContent = finalSymbols[1];
+                reel3.textContent = finalSymbols[2];
+
+                checkWin(finalSymbols); // Pass finalSymbols to checkWin
+                isSpinning = false;
+                if (!isFreeSpinMode || freeSpinsRemaining > 0) {
+                    spinButton.disabled = false;
+                }
+                hideMessage();
+
+                if (isFreeSpinMode && freeSpinsRemaining <= 0) {
+                    isFreeSpinMode = false;
+                    updateFreeSpinsDisplay();
+                    showMessage('Бесплатные вращения закончились!', 'info');
+                }
+                saveCurrentUserGame();
+            }, spinDuration + 500);
+        }
+
+        function areEquivalent(symA, symB) {
+            if (symA === symB) return true;
+            if (symA === '⭐' || symB === '⭐') return true;
+            return false;
+        }
+
+        function checkWin(finalSymbols) {
+            const [s1, s2, s3] = finalSymbols;
+            let message = '';
+            let isWin = false;
+            let winnings = 0;
+            let isJackpot = false;
+            let isFreeSpinTrigger = false;
+            let canDoubleOrNothing = false;
+
+            if (s1 === '7️⃣' && s2 === '7️⃣' && s3 === '7️⃣') {
+                message = `💰💰💰 ДЖЕКПОТ! Вы выиграли ${Math.floor(progressiveJackpot)} кредитов! 💰💰💰`;
+                winnings = progressiveJackpot;
+                progressiveJackpot = initialJackpot;
+                playSound('jackpot');
+                isWin = true;
+                isJackpot = true;
+                allUsersData[currentUserNickname].stats.jackpotsWon++;
+            }
+            else if (s1 === '🌟' && s2 === '🌟' && s3 === '🌟') {
+                message = '🎉 Вы выиграли 10 бесплатных вращений! 🎉';
+                freeSpinsRemaining += 10;
+                isFreeSpinMode = true;
+                playSound('freeSpin');
+                isWin = true;
+                isFreeSpinTrigger = true;
+            }
+            else if (areEquivalent(s1, s2) && areEquivalent(s2, s3)) {
+                message = '🎉 Джекпот! Все совпало! 🎉';
+                isWin = true;
+                if (s1 === '💰' || s2 === '💰' || s3 === '💰') {
+                    winnings = currentBet * 7;
+                } else {
+                    winnings = currentBet * 5;
+                }
+                playSound('win');
+                canDoubleOrNothing = true;
+            }
+            else if (areEquivalent(s1, s2) || areEquivalent(s2, s3) || areEquivalent(s1, s3)) {
+                message = '✨ Неплохо! Два символа совпали! ✨';
+                isWin = true;
+                winnings = currentBet * 2;
+                playSound('win');
+                canDoubleOrNothing = true;
+            }
+            else {
+                message = 'Попробуй еще раз! 😊';
+                isWin = false;
+                winnings = 0;
+            }
+
+            credits += winnings;
+            if (isWin) {
+                allUsersData[currentUserNickname].stats.totalCreditsWon += winnings;
+            }
+            updateCreditsDisplay();
+            updateJackpotDisplay();
+            updateFreeSpinsDisplay();
+
+            resultText.textContent = message;
+            resultBox.classList.remove('hidden');
+            if (isWin) {
+                resultBox.classList.remove('error', 'info');
+                resultBox.style.backgroundColor = 'rgba(21, 128, 61, 0.6)';
+                resultBox.style.borderColor = '#16a34a';
+                resultBox.style.color = '#dcfce7';
+            } else {
+                resultBox.classList.add('error');
+                resultBox.classList.remove('info');
+                resultBox.style.backgroundColor = 'rgba(185, 28, 28, 0.6)';
+                resultBox.style.borderColor = '#b91c1c';
+                resultBox.style.color = '#fee2e2';
+            }
+
+            if (canDoubleOrNothing && winnings > 0 && !isJackpot && !isFreeSpinTrigger && !isFreeSpinMode) {
+                doubleOrNothingCurrentWinnings = winnings;
+                doubleOrNothingAttempts = 0;
+                showDoubleOrNothingModal();
+            }
+            updateAchievements();
+            saveCurrentUserGame();
+        }
+
+        // --- Shop Functions ---
+        function updateShopButtons() {
+            if (currentUserNickname === null || !allUsersData[currentUserNickname]) return;
+
+            const purchasedItems = allUsersData[currentUserNickname].purchasedItems;
+
+            if (purchasedItems.lightTheme) {
+                buyLightThemeButton.textContent = 'Куплено';
+                buyLightThemeButton.disabled = true;
+            } else if (credits < 50) {
+                buyLightThemeButton.disabled = true;
+            } else {
+                buyLightThemeButton.disabled = false;
+            }
+
+            if (purchasedItems.goldenTheme) {
+                buyGoldenThemeButton.textContent = 'Куплено';
+                buyGoldenThemeButton.disabled = true;
+            } else if (credits < 75) {
+                buyGoldenThemeButton.disabled = true;
+            } else {
+                buyGoldenThemeButton.disabled = false;
+            }
+
+            if (purchasedItems.moneyBagSymbol) {
+                buyMoneyBagSymbolButton.textContent = 'Разблокировано';
+                buyMoneyBagSymbolButton.disabled = true;
+            } else if (credits < 100) {
+                buyMoneyBagSymbolButton.disabled = true;
+            } else {
+                buyMoneyBagSymbolButton.disabled = false;
+            }
+        }
+
+        function applyTheme(themeName) {
+            document.body.classList.remove('light-theme', 'golden-theme');
+            gameContainer.classList.remove('light-theme', 'golden-theme');
+
+            if (themeName === 'light') {
+                document.body.classList.add('light-theme');
+                gameContainer.classList.add('light-theme');
+            } else if (themeName === 'golden') {
+                document.body.classList.add('golden-theme');
+                gameContainer.classList.add('golden-theme');
+            }
+            activeTheme = themeName;
+            if (currentUserNickname && allUsersData[currentUserNickname]) {
+                allUsersData[currentUserNickname].activeTheme = activeTheme;
+                saveCurrentUserGame();
+            }
+        }
+
+        function purchaseItem(itemCost, itemType) {
+            if (credits >= itemCost) {
+                credits -= itemCost;
+                updateCreditsDisplay();
+                hideMessage();
+
+                if (itemType === 'lightTheme') {
+                    allUsersData[currentUserNickname].purchasedItems.lightTheme = true;
+                    applyTheme('light');
+                    showMessage('Светлая тема куплена и активирована!', 'info');
+                } else if (itemType === 'goldenTheme') {
+                    allUsersData[currentUserNickname].purchasedItems.goldenTheme = true;
+                    applyTheme('golden');
+                    showMessage('Золотая тема куплена и активирована!', 'info');
+                } else if (itemType === 'moneyBagSymbol') {
+                    allUsersData[currentUserNickname].purchasedItems.moneyBagSymbol = true;
+                    unlockedSymbols.push('💰');
+                    updateAllAvailableSymbols();
+                    showMessage('Символ "Мешок денег" разблокирован!', 'info');
+                }
+                updateShopButtons();
+                saveCurrentUserGame();
+            } else {
+                showMessage('Недостаточно кредитов для этой покупки!', 'error');
+            }
+        }
+
+        // --- Achievements Functions ---
+        function updateAchievements() {
+            if (!currentUserNickname || !allUsersData[currentUserNickname]) return;
+
+            const userStats = allUsersData[currentUserNickname].stats;
+            const userPurchases = allUsersData[currentUserNickname].purchasedItems;
+            const userAchievements = allUsersData[currentUserNickname].achievements;
+            const currentFreeSpins = freeSpinsRemaining;
+            const lastDailyBonusDate = allUsersData[currentUserNickname].lastDailyBonusDate;
+
+            ACHIEVEMENTS.forEach(achievement => {
+                if (!userAchievements[achievement.id] || !userAchievements[achievement.id].completed) {
+                    const isCompleted = achievement.check(userStats, credits, userPurchases, currentFreeSpins, lastDailyBonusDate);
+                    if (isCompleted) {
+                        userAchievements[achievement.id] = { completed: true, date: new Date().toISOString().slice(0, 10) };
+                        showMessage(`🏆 Новое достижение разблокировано: "${achievement.name}"!`, 'info');
+                    }
+                }
+            });
+            saveCurrentUserGame();
+        }
+
+        function showAchievementsModal() {
+            achievementsList.innerHTML = '';
+            const userAchievements = allUsersData[currentUserNickname].achievements;
+
+            ACHIEVEMENTS.forEach(achievement => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'achievement-item';
+                const isCompleted = userAchievements[achievement.id] && userAchievements[achievement.id].completed;
+                if (isCompleted) {
+                    itemDiv.classList.add('completed');
+                }
+
+                itemDiv.innerHTML = `
+                    <div>
+                        <h3 class="font-bold">${achievement.name}</h3>
+                        <p class="text-sm text-gray-400">${achievement.description}</p>
+                    </div>
+                    <span class="status">${isCompleted ? 'Выполнено!' : 'Не выполнено'}</span>
+                `;
+                achievementsList.appendChild(itemDiv);
+            });
+            achievementsModal.style.display = 'flex';
+        }
+
+        function closeAchievementsModalFunc() {
+            achievementsModal.style.display = 'none';
+        }
+
+        // --- Double or Nothing Functions ---
+        function showDoubleOrNothingModal() {
+            currentWinAmountDisplay.textContent = doubleOrNothingCurrentWinnings;
+            doubleOrNothingMessage.textContent = `У вас есть ${doubleOrNothingMaxAttempts - doubleOrNothingAttempts} попыток.`;
+            cardDisplay.textContent = '🂠';
+            redCardButton.disabled = false;
+            blackCardButton.disabled = false;
+            doubleOrNothingModal.style.display = 'flex';
+        }
+
+        function hideDoubleOrNothingModal() {
+            doubleOrNothingModal.style.display = 'none';
+        }
+
+        function playDoubleOrNothing(choice) {
+            if (doubleOrNothingAttempts >= doubleOrNothingMaxAttempts) {
+                showMessage('Вы использовали все попытки удвоения!', 'error');
+                redCardButton.disabled = true;
+                blackCardButton.disabled = true;
+                return;
+            }
+
+            playSound('cardFlip');
+            const cardValue = Math.random() < 0.5 ? 'red' : 'black'; // 50% chance
+            const cardSymbol = cardValue === 'red' ? '♥️' : '♠️'; // Example symbols
+            cardDisplay.textContent = cardSymbol;
+
+            doubleOrNothingAttempts++;
+            doubleOrNothingMessage.textContent = `У вас есть ${doubleOrNothingMaxAttempts - doubleOrNothingAttempts} попыток.`;
+
+            if (choice === cardValue) {
+                playSound('correct');
+                doubleOrNothingCurrentWinnings *= 2;
+                currentWinAmountDisplay.textContent = doubleOrNothingCurrentWinnings;
+                allUsersData[currentUserNickname].stats.doubleOrNothingWins++;
+                showMessage(`Успех! Ваш выигрыш удвоен до ${doubleOrNothingCurrentWinnings}!`, 'info');
+                if (doubleOrNothingAttempts >= doubleOrNothingMaxAttempts) {
+                    redCardButton.disabled = true;
+                    blackCardButton.disabled = true;
+                }
+            } else {
+                playSound('incorrect');
+                doubleOrNothingCurrentWinnings = 0;
+                allUsersData[currentUserNickname].stats.doubleOrNothingLosses++;
+                showMessage('Неудача! Вы проиграли выигрыш.', 'error');
+                redCardButton.disabled = true;
+                blackCardButton.disabled = true;
+            }
+            updateAchievements();
+            saveCurrentUserGame();
+        }
+
+        function collectWinnings() {
+            credits += doubleOrNothingCurrentWinnings;
+            updateCreditsDisplay();
+            hideDoubleOrNothingModal();
+            showMessage(`Вы забрали ${doubleOrNothingCurrentWinnings} кредитов!`, 'info');
+            doubleOrNothingCurrentWinnings = 0;
+        }
+
+        // --- Wallet Functions ---
+        function showWalletModal() {
+            // Update both credit displays when opening the wallet
+            walletCasinoCredits.textContent = credits;
+            walletCurrentBalance.textContent = walletBalance;
+            walletAmountInput.value = '';
+            walletMessage.classList.add('hidden');
+            walletModal.style.display = 'flex';
+        }
+
+        function closeWalletModalFunc() {
+            walletModal.style.display = 'none';
+        }
+
+        function handleVirtualTransaction(type) {
+            const amount = parseInt(walletAmountInput.value);
+            if (isNaN(amount) || amount <= 0 || amount % 10 !== 0) {
+                walletMessage.textContent = 'Пожалуйста, введите положительную сумму, кратную 10.';
+                walletMessage.classList.remove('hidden');
+                return;
+            }
+            walletMessage.classList.add('hidden');
+
+            if (type === 'deposit') {
+                if (walletBalance >= amount) {
+                    credits += amount;
+                    walletBalance -= amount;
+                    allUsersData[currentUserNickname].stats.walletDeposits++; // Track deposit
+                    showMessage(`Вы успешно пополнили кредиты казино на ${amount} из кошелька.`, 'info');
+                } else {
+                    walletMessage.textContent = 'Недостаточно средств в кошельке для пополнения.';
+                    walletMessage.classList.remove('hidden');
+                    return;
+                }
+            } else if (type === 'withdraw') {
+                if (credits >= amount) {
+                    walletBalance += amount;
+                    credits -= amount;
+                    allUsersData[currentUserNickname].stats.walletWithdrawals++; // Track withdrawal
+                    showMessage(`Вы успешно вывели ${amount} кредитов казино в кошелек.`, 'info');
+                } else {
+                    walletMessage.textContent = 'Недостаточно кредитов казино для вывода.';
+                    walletMessage.classList.remove('hidden');
+                    return;
+                }
+            }
+            updateCreditsDisplay(); // Updates main display and saves credits
+            updateWalletDisplay(); // Updates wallet modal display and saves walletBalance
+            walletAmountInput.value = ''; // Clear input field
+            updateAchievements(); // Check achievements after wallet transactions
+            saveCurrentUserGame();
+        }
+
+
+        // --- Event Listeners ---
+        // Auth screen events
+        loginButton.addEventListener('click', () => {
+            const nickname = nicknameInput.value.trim();
+            if (nickname.length < 3) {
+                authMessage.textContent = 'Никнейм должен быть не менее 3 символов.';
+                authMessage.classList.remove('hidden');
+                return;
+            }
+            currentUserNickname = nickname;
+            loadCurrentUserGame(); // This will handle showing the game UI and setting up state
+            authMessage.classList.add('hidden');
+        });
+
+        nicknameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loginButton.click();
+            }
+        });
+
+        // Game controls
+        spinButton.addEventListener('click', spin);
+        muteButton.addEventListener('click', toggleMute);
+        newGameButton.addEventListener('click', newGame);
+        logoutButton.addEventListener('click', logoutCurrentUser);
+        dailyBonusButton.addEventListener('click', () => checkDailyBonus(true));
+
+        betInput.addEventListener('input', () => {
+            const newBet = parseInt(betInput.value);
+            if (!isNaN(newBet) && newBet >= 10 && newBet % 10 === 0) {
+                spinButton.textContent = `Крутить! (${newBet} кредитов)`;
+                currentBet = newBet;
+                updateCreditsDisplay(); // This will re-evaluate if spin button should be enabled
+            } else {
+                spinButton.textContent = `Крутить! (Неверная ставка)`;
+            }
+            hideMessage();
+        });
+
+        // Shop button listeners
+        buyLightThemeButton.addEventListener('click', () => purchaseItem(50, 'lightTheme'));
+        buyGoldenThemeButton.addEventListener('click', () => purchaseItem(75, 'goldenTheme'));
+        buyMoneyBagSymbolButton.addEventListener('click', () => purchaseItem(100, 'moneyBagSymbol'));
+
+        // Achievements modal events
+        achievementsButton.addEventListener('click', showAchievementsModal);
+        closeAchievementsModal.addEventListener('click', closeAchievementsModalFunc);
+
+        // Double or Nothing modal events
+        redCardButton.addEventListener('click', () => playDoubleOrNothing('red'));
+        blackCardButton.addEventListener('click', () => playDoubleOrNothing('black'));
+        collectWinningsButton.addEventListener('click', collectWinnings);
+
+        // Wallet modal events
+        openWalletButton.addEventListener('click', showWalletModal);
+        closeWalletModal.addEventListener('click', closeWalletModalFunc);
+        depositButton.addEventListener('click', () => handleVirtualTransaction('deposit'));
+        withdrawButton.addEventListener('click', () => handleVirtualTransaction('withdraw'));
+        walletAmountInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                // Determine if it should be deposit or withdraw based on a common scenario or preference
+                // For simplicity, let's make enter trigger a deposit if there's an amount
+                // In a real app, you might have separate inputs or explicit buttons.
+                if (walletAmountInput.value && parseInt(walletAmountInput.value) > 0) {
+                    handleVirtualTransaction('deposit');
+                }
+            }
+        });
+
+
+        // --- Initial Setup on Page Load ---
+        window.onload = function() {
+            loadAllUsersData();
+            const lastLoggedInNickname = localStorage.getItem('lastLoggedInSlotMachineUser');
+            console.log("Window loaded. Last logged in nickname:", lastLoggedInNickname);
+
+            if (lastLoggedInNickname && allUsersData[lastLoggedInNickname]) {
+                currentUserNickname = lastLoggedInNickname;
+                console.log("Attempting auto-login for:", currentUserNickname);
+                loadCurrentUserGame();
+            } else {
+                console.log("No previous user found or user data invalid. Showing auth screen.");
+                authScreen.style.display = 'flex';
+                gameContainer.style.display = 'none';
+                // Initialize default UI elements which are visible even before login
+                betInput.value = currentBet; // Use initial currentBet for the input
+                spinButton.textContent = `Крутить! (${currentBet} кредитов)`;
+            }
+            // Set initial reel symbols for display before any spin
+            reel1.textContent = '🍒';
+            reel2.textContent = '🍋';
+            reel3.textContent = '🍊';
+        };
+    </script>
+</body>
+</html>
+

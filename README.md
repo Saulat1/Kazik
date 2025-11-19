@@ -1,2 +1,3 @@
-# Kazik
-Kazir
+#POS
+POS
+

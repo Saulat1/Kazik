@@ -1,1885 +1,1504 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Игровой автомат: Казино</title>
-<!-- Tailwind CSS CDN -->
-<script src="https://cdn.tailwindcss.com"></script>
-<!-- Tone.js CDN for sound effects -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
-<style>
-body {
-font-family: 'Inter', sans-serif;
-background-color: #1a202c; /* Default dark background for body */
-color: #e2e8f0; /* Default light text color for dark theme */
-display: flex;
-justify-content: center;
-align-items: center;
-min-height: 100vh;
-margin: 0;
-overflow-x: hidden;
-padding: 1rem;
-box-sizing: border-box;
-transition: background-color 0.5s ease-in-out;
-}
-.container {
-background-color: #2d3748; /* Default dark background for container */
-padding: 2rem;
-border-radius: 2rem;
-box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3); /* Darker shadow */
-max-width: 95%; /* Responsive width */
-width: 500px;
-display: flex;
-flex-direction: column;
-align-items: center;
-gap: 1.5rem;
-border: 1px solid #4a5568; /* Darker border */
-transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out, border-color 0.5s ease-in-out; /* Smooth theme transition */
-}
-h1 {
-color: #f0f2f5; /* Light color for heading */
-transition: color 0.5s ease-in-out;
-}
-.slot-reel {
-background-color: #0a0a0a; /* Very dark background for reels */
-border-radius: 0.75rem;
-padding: 0.75rem;
-width: 100px; /* Fixed width */
-height: 100px; /* Fixed height */
-display: flex;
-justify-content: center;
-align-items: center;
-font-size: 3.5rem;
-color: #fff;
-box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5); /* Stronger inner shadow */
-text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Stronger text shadow */
-transition: background-color 0.3s ease;
-flex-shrink: 0; /* Prevent reels from shrinking */
-}
-.slot-reels-container {
-display: flex;
-gap: 0.75rem;
-margin-bottom: 1.5rem;
-justify-content: center;
-width: 100%; /* Ensure container takes full width */
-overflow: hidden; /* Hide overflow on reels themselves if needed */
-}
-
-/* Adjust reel size for smaller screens */
-@media (max-width: 400px) {
-.slot-reel {
-width: 80px;
-height: 80px;
-font-size: 3rem;
-padding: 0.5rem;
-}
-.slot-reels-container {
-gap: 0.5rem;
-}
-}
-
-/* Spin Button - Larger */
-#spinButton {
-width: 100%; /* Full width */
-max-width: 400px; /* Wider button */
-padding: 1.2rem 2.5rem; /* More padding */
-font-size: 1.8rem; /* Larger font size */
-margin-top: 1rem; /* Add some margin */
-border-radius: 1.5rem; /* More rounded */
-background-image: linear-gradient(to right, #f97316, #fb923c); /* Orange gradient */
-box-shadow: 0 10px 25px rgba(249, 115, 22, 0.5); /* Stronger shadow */
-transition: all 0.2s ease-in-out;
-}
-#spinButton:hover {
-background-image: linear-gradient(to right, #ea580c, #f97316);
-transform: translateY(-4px);
-box-shadow: 0 15px 30px rgba(234, 88, 12, 0.7);
-}
-#spinButton:active {
-transform: translateY(0);
-box-shadow: 0 5px 15px rgba(249, 115, 22, 0.4);
-}
-#spinButton:disabled {
-background-image: linear-gradient(to right, #4a5568, #718096); /* Darker disabled */
-box-shadow: none;
-}
-
-/* Betting Input */
-.bet-control-group {
-display: flex;
-flex-direction: column;
-gap: 0.75rem;
-width: 100%;
-align-items: center;
-}
-.bet-input {
-background-color: #4a5568; /* Darker input background */
-color: #f0f2f5; /* Light text */
-border: 1px solid #6b7280;
-border-radius: 0.75rem;
-padding: 0.75rem 1rem;
-font-size: 1.1rem;
-width: 100%;
-max-width: 250px; /* Limit input width */
-text-align: center;
-}
-.bet-input:focus {
-outline: none;
-border-color: #6366f1; /* Purple focus border */
-box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4);
-}
-
-.message-box {
-background-color: #365314; /* Muted dark green for info */
-border: 1px solid #4d7c0f;
-color: #d9f99d; /* Light green text */
-padding: 1rem;
-border-radius: 1rem;
-width: 100%;
-text-align: center;
-font-weight: 600;
-margin-top: 1rem;
-box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out, color 0.5s ease-in-out;
-}
-.message-box.error {
-background-color: #7f1d1d; /* Muted dark red for error */
-border: 1px solid #b91c1c;
-color: #fca5a5; /* Light red text */
-}
-.message-box.info {
-background-color: #1e3a8a; /* Muted dark blue for info */
-border: 1px solid #2563eb;
-color: #bfdbfe; /* Light blue text */
-}
-.credits-display, .wallet-display { /* Combined for common styling */
-font-size: 1.5rem;
-font-weight: bold;
-color: #f0f2f5; /* Light text */
-background-color: #4a5568; /* Darker background for credits */
-padding: 0.5rem 1rem;
-border-radius: 0.75rem;
-min-width: 150px;
-text-align: center;
-box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
-transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
-margin: 0.5rem 0; /* Add margin for spacing */
-}
-.jackpot-display {
-font-size: 1.5rem;
-font-weight: bold;
-color: #fca5a5; /* Reddish color for jackpot */
-background-color: #4a1e1e; /* Darker red background */
-padding: 0.5rem 1rem;
-border-radius: 0.75rem;
-min-width: 150px;
-text-align: center;
-box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
-border: 1px solid #ef4444;
-animation: jackpot-pulse 2s infinite;
-}
-@keyframes jackpot-pulse {
-0% { transform: scale(1); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2); }
-50% { transform: scale(1.02); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 10px rgba(239, 68, 68, 0.7); }
-100% { transform: scale(1); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2); }
-}
-
-.free-spins-display {
-font-size: 1.2rem;
-font-weight: bold;
-color: #bfdbfe;
-background-color: #1e3a8a;
-padding: 0.4rem 0.8rem;
-border-radius: 0.5rem;
-margin-top: 0.5rem;
-box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
-border: 1px solid #2563eb;
-}
-
-.sound-control-button {
-background-color: #4a5568; /* Darker grey for sound control */
-padding: 0.5rem 1rem;
-font-size: 0.9rem;
-border-radius: 0.75rem;
-color: #f0f2f5; /* Light text */
-box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
-transition: background-color 0.2s;
-width: fit-content;
-}
-.sound-control-button:hover {
-background-color: #6b7280;
-}
-.sound-control-button.muted {
-background-color: #b91c1c; /* Dark red when muted */
-}
-.sound-control-button.muted:hover {
-background-color: #dc2626;
-}
-
-/* Section dividers for clarity */
-.game-section {
-width: 100%;
-border-top: 1px solid #4a5568;
-padding-top: 1.5rem;
-margin-top: 1.5rem;
-text-align: center;
-}
-
-.shop-items, .wallet-actions { /* General spacing for buttons */
-display: flex;
-flex-direction: column;
-gap: 1rem;
-margin-top: 1rem;
-width: 100%;
-align-items: center; /* Center buttons in their section */
-}
-.shop-item-button, .wallet-button { /* Common button styling */
-padding: 0.7rem 1.5rem;
-font-size: 1rem;
-font-weight: 600;
-border-radius: 0.75rem;
-color: white;
-box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-transition: all 0.2s;
-width: 80%; /* Consistent width for shop/wallet buttons */
-max-width: 300px;
-text-align: center;
-}
-
-.shop-item-button {
-background-image: linear-gradient(to right, #1e3a8a, #2563eb); /* Darker blue gradient */
-}
-.shop-item-button:hover {
-background-image: linear-gradient(to right, #172554, #1e3a8a);
-transform: translateY(-2px);
-box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-}
-.shop-item-button:disabled {
-background-image: linear-gradient(to right, #4a5568, #6b7280); /* Darker disabled */
-box-shadow: none;
-cursor: not-allowed;
-transform: none;
-}
-.new-game-button, .logout-button { /* Styling for utility buttons */
-background-color: #047857; /* Emerald green for new game */
-padding: 0.6rem 1.2rem;
-font-size: 0.9rem;
-border-radius: 0.75rem;
-color: white;
-box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
-transition: background-color 0.2s;
-width: fit-content;
-margin-top: 1rem;
-}
-.new-game-button:hover, .logout-button:hover {
-background-color: #065f46;
-}
-
-/* Social Gate and Auth Screen common styles */
-.full-screen-overlay {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background-color: rgba(0, 0, 0, 0.85);
-display: flex;
-justify-content: center;
-align-items: center;
-z-index: 1000;
-}
-.overlay-content {
-background-color: #2d3748;
-padding: 2.5rem;
-border-radius: 1.5rem;
-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-display: flex;
-flex-direction: column;
-gap: 1.5rem;
-width: 90%;
-max-width: 400px;
-color: #e2e8f0;
-text-align: center;
-}
-.overlay-input {
-background-color: #4a5568;
-color: #f0f2f5;
-border: 1px solid #6b7280;
-border-radius: 0.75rem;
-padding: 0.75rem 1rem;
-font-size: 1.1rem;
-width: 100%;
-text-align: center;
-}
-.overlay-button { /* Common styling for auth/modal close buttons */
-background-image: linear-gradient(to right, #f97316, #fb923c);
-padding: 0.75rem 1.5rem;
-border-radius: 1rem;
-font-size: 1.1rem;
-font-weight: 700;
-color: white;
-transition: all 0.2s;
-}
-.overlay-button:hover:not(:disabled) {
-background-image: linear-gradient(to right, #ea580c, #f97316);
-transform: translateY(-2px);
-}
-.overlay-button:disabled {
-background-color: #a0aec0; /* Gray when disabled */
-cursor: not-allowed;
-box-shadow: none;
-background-image: none;
-}
-.social-link {
-display: flex;
-align-items: center;
-gap: 10px;
-color: #63b3ed; /* Light blue for links */
-text-decoration: none;
-font-weight: 600;
-transition: color 0.3s ease;
-justify-content: center; /* Center social links */
-}
-.social-link:hover {
-color: #4299e1;
-}
-
-
-/* Achievements Section */
-#achievementsModal {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background-color: rgba(0, 0, 0, 0.85);
-display: none; /* Hidden by default */
-justify-content: center;
-align-items: center;
-z-index: 1001; /* Above auth screen if both open */
-}
-.achievements-content {
-background-color: #2d3748;
-padding: 2rem;
-border-radius: 1.5rem;
-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-width: 90%;
-max-width: 600px;
-max-height: 90vh; /* Max height for scroll */
-overflow-y: auto; /* Scrollable if too many achievements */
-color: #e2e8f0;
-}
-.achievement-item {
-background-color: #4a5568;
-padding: 0.75rem 1.25rem;
-border-radius: 0.75rem;
-margin-bottom: 0.75rem;
-display: flex;
-justify-content: space-between;
-align-items: center;
-border: 1px solid #6b7280;
-}
-.achievement-item.completed {
-background-color: #104a37; /* Darker green for completed */
-border-color: #10b981;
-}
-.achievement-item .status {
-font-weight: bold;
-color: #ef4444; /* Red for not completed */
-}
-.achievement-item.completed .status {
-color: #10b981; /* Green for completed */
-}
-
-/* Double or Nothing Modal */
-#doubleOrNothingModal {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background-color: rgba(0, 0, 0, 0.85);
-display: none; /* Hidden by default */
-justify-content: center;
-align-items: center;
-z-index: 1002;
-}
-.double-or-nothing-content {
-background-color: #2d3748;
-padding: 2.5rem;
-border-radius: 1.5rem;
-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-display: flex;
-flex-direction: column;
-gap: 1.5rem;
-width: 90%;
-max-width: 450px;
-color: #e2e8f0;
-text-align: center;
-}
-.card-display {
-font-size: 5rem;
-line-height: 1;
-margin: 1rem 0;
-}
-.card-button {
-padding: 1rem 2rem;
-font-size: 1.2rem;
-font-weight: bold;
-border-radius: 1rem;
-transition: all 0.2s;
-}
-.card-button.red {
-background-color: #ef4444; /* Red */
-color: white;
-}
-.card-button.red:hover { background-color: #dc2626; transform: translateY(-2px); }
-.card-button.black {
-background-color: #1f2937; /* Dark black */
-color: white;
-}
-.card-button.black:hover { background-color: #000; transform: translateY(-2px); }
-.collect-button {
-background-color: #10b981;
-}
-.collect-button:hover { background-color: #059669; }
-
-/* Wallet Modal */
-#walletModal {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background-color: rgba(0, 0, 0, 0.85);
-display: none; /* Hidden by default */
-justify-content: center;
-align-items: center;
-z-index: 1001;
-}
-.wallet-content {
-background-color: #2d3748;
-padding: 2.5rem;
-border-radius: 1.5rem;
-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-display: flex;
-flex-direction: column;
-gap: 1.5rem;
-width: 90%;
-max-width: 400px;
-color: #e2e8f0;
-text-align: center;
-}
-.wallet-input {
-background-color: #4a5568;
-color: #f0f2f5;
-border: 1px solid #6b7280;
-border-radius: 0.75rem;
-padding: 0.75rem 1rem;
-font-size: 1.1rem;
-width: 100%;
-text-align: center;
-}
-.wallet-button.deposit {
-background-image: linear-gradient(to right, #059669, #10b981); /* Green for deposit */
-}
-.wallet-button.deposit:hover { transform: translateY(-2px); background-image: linear-gradient(to right, #047857, #0d9488); }
-
-.wallet-button.withdraw {
-background-image: linear-gradient(to right, #dc2626, #ef4444); /* Red for withdraw */
-}
-.wallet-button.withdraw:hover { transform: translateY(-2px); background-image: linear-gradient(to right, #b91c1c, #dc2626); }
-
-
-/* Themes */
-.light-theme {
-background-color: #f0f2f5;
-color: #1a202c;
-}
-.light-theme .container {
-background-color: #ffffff;
-border-color: #e2e8f0;
-}
-.light-theme h1 {
-color: #1a202c;
-}
-.light-theme .credits-display, .light-theme .wallet-display {
-background-color: #e2e8f0;
-color: #4b5563;
-}
-.light-theme .jackpot-display {
-background-color: #ffe0b2;
-border-color: #ff9800;
-color: #e65100;
-}
-.light-theme .free-spins-display {
-background-color: #e0f2fe;
-border-color: #90cdf4;
-color: #2b6cb0;
-}
-.light-theme .slot-reel {
-background-color: #f9fafb;
-color: #333;
-box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-.light-theme .sound-control-button {
-background-color: #94a3b8;
-color: white;
-}
-.light-theme .message-box {
-background-color: #ecfdf5;
-border-color: #6ee7b7;
-color: #065f46;
-}
-.light-theme .message-box.error {
-background-color: #fee2e2;
-border-color: #ef4444;
-color: #b91c1c;
-}
-.light-theme .message-box.info {
-background-color: #e0f2fe;
-border-color: #90cdf4;
-color: #2b6cb0;
-}
-.light-theme .bet-input {
-background-color: #f3f4f6;
-color: #1a202c;
-border-color: #d1d5db;
-}
-.light-theme .shop-item-button {
-background-image: linear-gradient(to right, #2563eb, #3b82f6);
-}
-.light-theme .shop-item-button:disabled {
-background-image: linear-gradient(to right, #93c5fd, #bfdbfe);
-}
-.light-theme .auth-container, .light-theme .achievements-content, .light-theme .double-or-nothing-content, .light-theme .wallet-content, .light-theme .overlay-content {
-background-color: #ffffff;
-color: #1a202c;
-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-.light-theme .auth-input, .light-theme .wallet-input, .light-theme .overlay-input {
-background-color: #f3f4f6;
-color: #1a202c;
-border-color: #d1d5db;
-}
-.light-theme .achievement-item {
-background-color: #f3f4f6;
-border-color: #d1d5db;
-color: #374151;
-}
-.light-theme .achievement-item.completed {
-background-color: #d1fae5;
-border-color: #6ee7b7;
-}
-.light-theme .wallet-button.deposit { background-image: linear-gradient(to right, #34d399, #6ee7b7); }
-.light-theme .wallet-button.deposit:hover { background-image: linear-gradient(to right, #10b981, #34d399); }
-.light-theme .wallet-button.withdraw { background-image: linear-gradient(to right, #f87171, #ef4444); }
-.light-theme .wallet-button.withdraw:hover { background-image: linear-gradient(to right, #ef4444, #f87171); }
-.light-theme .overlay-button:disabled { background-color: #cbd5e1; }
-
-
-.golden-theme {
-background-color: #a18838; /* Dark gold */
-color: #fff;
-}
-.golden-theme .container {
-background-color: #bf9b30; /* Medium gold */
-border-color: #d4af37;
-box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
-}
-.golden-theme h1 {
-color: #fff;
-text-shadow: 1px 1px 2px #000;
-}
-.golden-theme .credits-display, .golden-theme .wallet-display {
-background-color: #d4af37;
-color: #333;
-box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-.golden-theme .jackpot-display {
-background-color: #ffc107; /* Brighter gold for golden theme jackpot */
-border-color: #ffeb3b;
-color: #8d6e63;
-}
-.golden-theme .free-spins-display {
-background-color: #ffecb3;
-border-color: #ffe082;
-color: #ff8f00;
-}
-.golden-theme .slot-reel {
-background-color: #8b792e; /* Darker gold for reels */
-box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6);
-}
-.golden-theme .sound-control-button {
-background-color: #d4af37;
-color: #333;
-}
-.golden-theme .shop-item-button:hover { transform: translateY(-2px); }
-.golden-theme .shop-item-button:disabled {
-background-image: linear-gradient(to right, #a18838, #c7a2b);
-}
-.golden-theme .auth-container, .golden-theme .achievements-content, .golden-theme .double-or-nothing-content, .golden-theme .wallet-content, .golden-theme .overlay-content {
-background-color: #bf9b30;
-color: #fff;
-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-}
-.golden-theme .auth-input, .golden-theme .wallet-input, .golden-theme .overlay-input {
-background-color: #d4af37;
-color: #333;
-border-color: #e0b445;
-}
-.golden-theme .achievement-item {
-background-color: #d4af37;
-border-color: #e0b445;
-color: #333;
-}
-.golden-theme .achievement-item.completed {
-background-color: #e6c26b;
-border-color: #f7e09e;
-}
-.golden-theme .wallet-button.deposit { background-image: linear-gradient(to right, #92d437, #b2db66); }
-.golden-theme .wallet-button.deposit:hover { background-image: linear-gradient(to right, #7cb342, #92d437); }
-.golden-theme .wallet-button.withdraw { background-image: linear-gradient(to right, #ff8080, #ff4d4d); }
-.golden-theme .wallet-button.withdraw:hover { background-image: linear-gradient(to right, #ff4d4d, #ff8080); }
-.golden-theme .overlay-button:disabled { background-color: #a18838; }
-
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💰 My Shop v8</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- Babel (для JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Библиотеки -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 500: '#3b82f6', 600: '#2563eb', dark: '#93c5fd' },
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        success: '#10b981',
+                    },
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                },
+            },
+        };
+    </script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: #f9fafb; color: #111827; }
+        .fade-in { animation: fadeIn 0.25s ease-out; }
+        @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+    </style>
 </head>
 <body>
-<!-- Social Gate Screen (FIRST screen to show) -->
-<div id="socialGate" class="full-screen-overlay">
-<div class="overlay-content">
-<h2 class="text-3xl font-bold mb-4">Добро пожаловать в Казино!</h2>
-<p class="text-lg text-gray-300 mb-6">Чтобы начать играть и получить стартовый бонус, пожалуйста, подпишитесь на наши социальные сети:</p>
-
-<a href="https://t.me/dako9640" target="_blank" class="social-link mb-2">
-<!-- Telegram Icon -->
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.305 7.107l-3.375 9.091c-.207.556-.814.773-1.34.498l-2.483-1.12c-.42-.19-.7-.58-.7-1.01V9.77c0-.28.18-.53.45-.6l5.77-2.1c.47-.17.97-.04 1.3.33.32.37.4 1.01.12 1.51zm-3.87 3.33l-.938 3.513c-.143.52-.733.72-1.22.46l-1.34-1.02c-.3-.23-.49-.58-.49-.96v-3.514c0-.25.17-.46.42-.52l4.98-1.5c.42-.13.88.02 1.15.35.26.33.31.79.13 1.25z"/>
-</svg>
-<span>Наш Telegram Канал</span>
-</a>
- 
-<a href="https://t.me/Ai95bot_bot" target="_blank" class="social-link mb-2">
-<!-- Telegram Icon -->
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.305 7.107l-3.375 9.091c-.207.556-.814.773-1.34.498l-2.483-1.12c-.42-.19-.7-.58-.7-1.01V9.77c0-.28.18-.53.45-.6l5.77-2.1c.47-.17.97-.04 1.3.33.32.37.4 1.01.12 1.51zm-3.87 3.33l-.938 3.513c-.143.52-.733.72-1.22.46l-1.34-1.02c-.3-.23-.49-.58-.49-.96v-3.514c0-.25.17-.46.42-.52l4.98-1.5c.42-.13.88.02 1.15.35.26.33.31.79.13 1.25z"/>
-</svg>
-<span>Наш Telegram Канал</span>
-</a>
-
-<a href="https://instagram.com/dako9640" target="_blank" class="social-link mb-6">
-<!-- Instagram Icon -->
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-<path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4c0 3.2-2.6 5.8-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8C2 4.6 4.6 2 7.8 2zm-.2 2A2.003 2.003 0 0 0 4 6.2v8.4c0 1.1.9 2 2 2h8.4c1.1 0 2-.9 2-2V6.2A2.003 2.003 0 0 0 16.2 4H7.8zm9.2 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2zM12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 2c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/>
-</svg>
-<span>Наша Страница в Instagram</span>
-</a>
-
-<button id="startSocialGameBtn" class="overlay-button" disabled>
-Я подписался! Начать игру
-</button>
-<p class="text-sm text-gray-400 mt-2">
-Мы доверяем нашим игрокам :) Если вы не подписались, сделайте это, пожалуйста, после начала игры.
-</p>
-</div>
-</div>
-
-
-<!-- Authentication Screen (hidden by default, shown after social gate) -->
-<div id="authScreen" class="full-screen-overlay hidden">
-<div class="overlay-content">
-<h2 class="text-3xl font-bold mb-4">Авторизация</h2>
-<p class="text-sm mb-4">Введите ваш никнейм или зарегистрируйтесь.</p>
-<input type="text" id="nicknameInput" class="overlay-input" placeholder="Введите ваш никнейм">
-<button id="loginButton" class="overlay-button">Войти / Зарегистрироваться</button>
-<div id="authMessage" class="text-red-400 text-sm mt-2 hidden"></div>
-</div>
-</div>
-
-<!-- Main Game Container (hidden until logged in) -->
-<div class="container hidden" id="gameContainer">
-<h1 class="text-4xl font-extrabold mb-4">🎰 Игровой автомат 🎰</h1>
-<p id="loggedInUser" class="text-lg font-semibold mb-4 text-gray-300">Игрок: </p>
-
-<div class="w-full flex flex-wrap justify-between items-center mb-4 gap-2">
-<div id="creditsDisplay" class="credits-display flex-grow">Кредиты: 100</div>
-<div id="jackpotDisplay" class="jackpot-display flex-grow">Джекпот: 1000</div>
-</div>
-
-<div id="freeSpinsDisplay" class="free-spins-display hidden">Бесплатные вращения: 0</div>
-
-
-<div class="slot-reels-container">
-<div id="reel1" class="slot-reel">🍒</div>
-<div id="reel2" class="slot-reel">🍋</div>
-<div id="reel3" class="slot-reel">🍊</div>
-</div>
-
-<div class="bet-control-group game-section">
-<label for="betInput" class="text-md font-semibold text-gray-300">Ваша ставка:</label>
-<input type="number" id="betInput" class="bet-input" value="20" min="10" step="10">
-<button id="spinButton">Крутить! (20 кредитов)</button>
-</div>
-
-<div id="resultBox" class="message-box hidden game-section">
-<span id="resultText" class="result-text"></span>
-</div>
-
-<div id="messageBox" class="message-box hidden info game-section">
-<span id="messageText"></span>
-</div>
-
-<!-- Shop Section -->
-<div class="shop-section game-section">
-<h2 class="text-2xl font-bold mb-4">Магазин</h2>
-<div class="shop-items">
-<button id="buyLightTheme" class="shop-item-button">Светлая тема (50 кредитов)</button>
-<button id="buyGoldenTheme" class="shop-item-button">Золотая тема (75 кредитов)</button>
-<button id="buyMoneyBagSymbol" class="shop-item-button">Разблокировать 💰 (100 кредитов)</button>
-</div>
-</div>
-
-<!-- Wallet Section -->
-<div class="wallet-section game-section">
-<h2 class="text-2xl font-bold mb-4">Виртуальный кошелек</h2>
-<div class="shop-items"> <!-- Reusing shop-items for button group layout -->
-<button id="openWalletButton" class="shop-item-button">Открыть кошелек</button>
-</div>
-</div>
-
-<div class="w-full flex flex-wrap justify-around mt-4 gap-2">
-<button id="muteButton" class="sound-control-button flex-grow">🎶 Звук: Вкл</button>
-<button id="achievementsButton" class="sound-control-button flex-grow">🏆 Достижения</button>
-<button id="dailyBonusButton" class="sound-control-button flex-grow">🎁 Ежедневный бонус</button>
-</div>
-<button id="logoutButton" class="new-game-button mt-4">Выйти</button>
-<button id="newGameButton" class="new-game-button mt-2">Начать новую игру (Сброс)</button>
-</div>
-
-<!-- Achievements Modal -->
-<div id="achievementsModal">
-<div class="achievements-content">
-<h2 class="text-3xl font-bold mb-4">🏆 Ваши достижения 🏆</h2>
-<div id="achievementsList">
-<!-- Achievements will be loaded here -->
-</div>
-<button id="closeAchievementsModal" class="overlay-button mt-6">Закрыть</button>
-</div>
-</div>
-
-<!-- Double or Nothing Modal -->
-<div id="doubleOrNothingModal">
-<div class="double-or-nothing-content">
-<h2 class="text-3xl font-bold mb-4">Удвоить или ничего!</h2>
-<p class="text-xl">Ваш выигрыш: <span id="currentWinAmount">0</span> кредитов</p>
-<p class="text-md text-gray-400 mb-4" id="doubleOrNothingMessage"></p>
-<div class="card-display" id="cardDisplay">🂠</div>
-<div class="flex gap-4 justify-center w-full">
-<button id="redCardButton" class="card-button red">Красный</button>
-<button id="blackCardButton" class="card-button black">Черный</button>
-</div>
-<div class="flex gap-4 justify-center w-full mt-4">
-<button id="collectWinningsButton" class="overlay-button collect-button">Забрать выигрыш</button>
-</div>
-</div>
-</div>
-
-<!-- Wallet Modal -->
-<div id="walletModal">
-<div class="wallet-content">
-<h2 class="text-3xl font-bold mb-4">Виртуальный кошелек</h2>
-<p class="text-xl">Кредиты казино: <span id="walletCasinoCredits">0</span></p>
-<p class="text-xl">Баланс кошелька: <span id="walletCurrentBalance">0</span></p>
-<input type="number" id="walletAmountInput" class="overlay-input" placeholder="Сумма (кратная 10)">
-<div class="flex flex-col gap-4 justify-center w-full wallet-actions">
-<button id="depositButton" class="wallet-button deposit">Пополнить кредиты (из кошелька)</button>
-<button id="withdrawButton" class="wallet-button withdraw">Вывести в кошелек (из казино)</button>
-</div>
-<div id="walletMessage" class="text-sm mt-2 hidden text-red-400"></div>
-<button id="closeWalletModal" class="overlay-button mt-6">Закрыть</button>
-</div>
-</div>
-
-
-<script>
-// DOM Elements
-// New Social Gate Elements
-const socialGate = document.getElementById('socialGate');
-const startSocialGameBtn = document.getElementById('startSocialGameBtn');
-const socialLinks = document.querySelectorAll('#socialGate .social-link');
-
-
-const authScreen = document.getElementById('authScreen');
-const nicknameInput = document.getElementById('nicknameInput');
-const loginButton = document.getElementById('loginButton');
-const authMessage = document.getElementById('authMessage');
-const gameContainer = document.getElementById('gameContainer');
-const loggedInUserDisplay = document.getElementById('loggedInUser');
-
-const reel1 = document.getElementById('reel1');
-const reel2 = document.getElementById('reel2');
-const reel3 = document.getElementById('reel3');
-const spinButton = document.getElementById('spinButton');
-const resultBox = document.getElementById('resultBox');
-const resultText = document.getElementById('resultText');
-const messageBox = document.getElementById('messageBox');
-const messageText = document.getElementById('messageText');
-const creditsDisplay = document.getElementById('creditsDisplay');
-const jackpotDisplay = document.getElementById('jackpotDisplay');
-const freeSpinsDisplay = document.getElementById('freeSpinsDisplay');
-const muteButton = document.getElementById('muteButton');
-const newGameButton = document.getElementById('newGameButton');
-const logoutButton = document.getElementById('logoutButton');
-const betInput = document.getElementById('betInput');
-
-// Shop Buttons
-const buyLightThemeButton = document.getElementById('buyLightTheme');
-const buyGoldenThemeButton = document.getElementById('buyGoldenTheme');
-const buyMoneyBagSymbolButton = document.getElementById('buyMoneyBagSymbol');
-
-// Achievements Modal
-const achievementsButton = document.getElementById('achievementsButton');
-const achievementsModal = document.getElementById('achievementsModal');
-const achievementsList = document.getElementById('achievementsList');
-const closeAchievementsModal = document.getElementById('closeAchievementsModal');
-
-// Daily Bonus
-const dailyBonusButton = document.getElementById('dailyBonusButton');
-
-// Double or Nothing Modal
-const doubleOrNothingModal = document.getElementById('doubleOrNothingModal');
-const currentWinAmountDisplay = document.getElementById('currentWinAmount');
-const doubleOrNothingMessage = document.getElementById('doubleOrNothingMessage');
-const cardDisplay = document.getElementById('cardDisplay');
-const redCardButton = document.getElementById('redCardButton');
-const blackCardButton = document.getElementById('blackCardButton');
-const collectWinningsButton = document.getElementById('collectWinningsButton');
-
-// Wallet Modal
-const openWalletButton = document.getElementById('openWalletButton');
-const walletModal = document.getElementById('walletModal');
-const walletCasinoCredits = document.getElementById('walletCasinoCredits'); // New: to show current casino credits in wallet modal
-const walletCurrentBalance = document.getElementById('walletCurrentBalance');
-const walletAmountInput = document.getElementById('walletAmountInput');
-const depositButton = document.getElementById('depositButton');
-const withdrawButton = document.getElementById('withdrawButton');
-const walletMessage = document.getElementById('walletMessage');
-const closeWalletModal = document.getElementById('closeWalletModal');
-
-
-// Game state variables (will be populated from current user's data)
-let currentUserNickname = null;
-let credits; // Casino credits for playing
-let walletBalance; // Separate balance for wallet
-let progressiveJackpot;
-let freeSpinsRemaining;
-let currentBet = 20; // Default, can be changed by user
-let hasLightTheme;
-let hasGoldenTheme;
-let hasMoneyBagSymbol;
-let activeTheme;
-let isSpinning = false;
-let isMuted = false;
-let isFreeSpinMode = false; // Added to track free spin mode
-const spinDuration = 2000;
-
-let doubleOrNothingCurrentWinnings = 0;
-const doubleOrNothingMaxAttempts = 3;
-let doubleOrNothingAttempts = 0;
-
-// Shared game data (not user-specific)
-const initialCredits = 100;
-const initialWalletBalance = 0; // New: initial wallet balance
-const initialJackpot = 1000;
-const spinCostMultiplier = 0.05;
-
-// Define symbols globally
-const baseSymbols = ['🍒', '🍋', '🍊', '🍇', '🔔', '💎', '🍀', '⭐', '7️⃣', '🌟']; // ⭐ Wild, 7️⃣ Jackpot, 🌟 Free Spins
-let unlockedSymbols = []; // Will contain '💰' if unlocked
-let allAvailableSymbols = [...baseSymbols]; // This will be updated based on unlockedSymbols
-
-
-// Global object to store all users data
-let allUsersData = {};
-
-
-// --- Achievements Definitions ---
-const ACHIEVEMENTS = [
-{ id: 'first_spin', name: 'Первое вращение', description: 'Сделать первое вращение на автомате.', check: (stats) => stats.totalSpins >= 1 },
-{ id: 'spin_master_10', name: 'Мастер спинов (10)', description: 'Сделать 10 вращений.', check: (stats) => stats.totalSpins >= 10 },
-{ id: 'spin_master_100', name: 'Мастер спинов (100)', description: 'Сделать 100 вращений.', check: (stats) => stats.totalSpins >= 100 },
-{ id: 'first_win', name: 'Первый выигрыш', description: 'Выиграть в первый раз.', check: (stats) => stats.totalCreditsWon > 0 },
-{ id: 'credits_thousand', name: 'Тысяча кредитов', description: 'Накопить 1000 кредитов.', check: (stats, userCredits) => userCredits >= 1000 },
-{ id: 'jackpot_hunter', name: 'Охотник за джекпотом', description: 'Выиграть прогрессивный джекпот.', check: (stats) => stats.jackpotsWon >= 1 },
-{ id: 'lucky_double', name: 'Двойная удача', description: 'Успешно удвоить выигрыш в мини-игре.', check: (stats) => stats.doubleOrNothingWins >= 1 },
-{ id: 'shopaholic', name: 'Шопоголик', description: 'Купить все предметы в магазине.', check: (stats, userCredits, purchasedItems) => purchasedItems.lightTheme && purchasedItems.goldenTheme && purchasedItems.moneyBagSymbol },
-{ id: 'daily_bonus_collector', name: 'Коллекционер бонусов', description: 'Получить ежедневный бонус.', check: (stats, userCredits, purchasedItems, freeSpins, lastDailyBonusDate) => {
-const today = new Date().toISOString().slice(0, 10);
-return lastDailyBonusDate === today;
-}},
-{ id: 'wallet_deposit', name: 'Первое пополнение', description: 'Перевести средства из кошелька в казино.', check: (stats) => stats.walletDeposits > 0 },
-{ id: 'wallet_withdraw', name: 'Первый вывод', description: 'Вывести средства из казино в кошелек.', check: (stats) => stats.walletWithdrawals > 0 },
-];
-
-
-// --- Local Storage Functions ---
-function saveAllUsersData() {
-localStorage.setItem('slotMachineUsersData', JSON.stringify(allUsersData));
-}
-
-function loadAllUsersData() {
-const savedData = localStorage.getItem('slotMachineUsersData');
-if (savedData) {
-try {
-allUsersData = JSON.parse(savedData);
-} catch (e) {
-console.error("Error parsing saved user data, resetting:", e);
-allUsersData = {};
-}
-} else {
-allUsersData = {};
-}
-console.log("Loaded all users data:", allUsersData);
-}
-
-function loadCurrentUserGame() {
-if (!currentUserNickname) {
-console.error("loadCurrentUserGame called without currentUserNickname. Aborting.");
-return;
-}
-
-console.log("Attempting to load game for user:", currentUserNickname);
-if (!allUsersData[currentUserNickname]) {
-// New user - initialize their data
-allUsersData[currentUserNickname] = {
-credits: initialCredits,
-walletBalance: initialWalletBalance, // Initialize wallet balance for new user
-progressiveJackpot: initialJackpot,
-freeSpinsRemaining: 0,
-lastDailyBonusDate: null,
-purchasedItems: {
-lightTheme: false,
-goldenTheme: false,
-moneyBagSymbol: false,
-},
-activeTheme: 'dark',
-achievements: {},
-stats: {
-totalSpins: 0,
-totalCreditsWon: 0,
-jackpotsWon: 0,
-doubleOrNothingWins: 0,
-doubleOrNothingLosses: 0,
-walletDeposits: 0, // New stat
-walletWithdrawals: 0, // New stat
-}
-};
-showMessage(`Добро пожаловать, ${currentUserNickname}!`, 'info');
-console.log("New user data initialized:", allUsersData[currentUserNickname]);
-} else {
-console.log("Existing user data loaded for:", currentUserNickname, allUsersData[currentUserNickname]);
-// Ensure new walletBalance and stats fields exist for old users
-if (typeof allUsersData[currentUserNickname].walletBalance === 'undefined') {
-allUsersData[currentUserNickname].walletBalance = initialWalletBalance;
-}
-if (typeof allUsersData[currentUserNickname].stats.walletDeposits === 'undefined') {
-allUsersData[currentUserNickname].stats.walletDeposits = 0;
-}
-if (typeof allUsersData[currentUserNickname].stats.walletWithdrawals === 'undefined') {
-allUsersData[currentUserNickname].stats.walletWithdrawals = 0;
-}
-}
-
-// Assign values from loaded data to global game state variables
-credits = allUsersData[currentUserNickname].credits;
-walletBalance = allUsersData[currentUserNickname].walletBalance; // Load wallet balance
-progressiveJackpot = allUsersData[currentUserNickname].progressiveJackpot;
-freeSpinsRemaining = allUsersData[currentUserNickname].freeSpinsRemaining;
-
-hasLightTheme = allUsersData[currentUserNickname].purchasedItems.lightTheme;
-hasGoldenTheme = allUsersData[currentUserNickname].purchasedItems.goldenTheme;
-hasMoneyBagSymbol = allUsersData[currentUserNickname].purchasedItems.moneyBagSymbol;
-applyTheme(allUsersData[currentUserNickname].activeTheme);
-
-// Rebuild allAvailableSymbols based on unlocked items
-unlockedSymbols = [];
-if (hasMoneyBagSymbol) {
-unlockedSymbols.push('💰');
-}
-updateAllAvailableSymbols();
-
-loggedInUserDisplay.textContent = `Игрок: ${currentUserNickname}`;
-// All UI updates must happen *after* global variables are assigned
-updateCreditsDisplay();
-updateJackpotDisplay();
-updateFreeSpinsDisplay();
-updateShopButtons();
-updateAchievements();
-checkDailyBonus(false); // Check for daily bonus on login, without showing success message if already claimed
-
-// Ensure bet input and spin button text are correctly set for the current user
-betInput.value = currentBet; // Use currentBet from global default or previous session if loaded
-spinButton.textContent = `Крутить! (${currentBet} кредитов)`;
-
-gameContainer.classList.remove('hidden'); // Show game UI
-authScreen.classList.add('hidden'); // Hide auth screen
-socialGate.classList.add('hidden'); // Ensure social gate is hidden
-localStorage.setItem('lastLoggedInSlotMachineUser', currentUserNickname); // Save last logged in user
-saveAllUsersData(); // Save initial state if new user or updated
-console.log("Game UI shown for user:", currentUserNickname);
-}
-
-function saveCurrentUserGame() {
-if (currentUserNickname && allUsersData[currentUserNickname]) {
-// Ensure all current global game state variables are pushed back to the user's data object
-allUsersData[currentUserNickname].credits = credits;
-allUsersData[currentUserNickname].walletBalance = walletBalance; // Save wallet balance
-allUsersData[currentUserNickname].progressiveJackpot = progressiveJackpot;
-allUsersData[currentUserNickname].freeSpinsRemaining = freeSpinsRemaining;
-allUsersData[currentUserNickname].purchasedItems.lightTheme = hasLightTheme;
-allUsersData[currentUserNickname].purchasedItems.goldenTheme = hasGoldenTheme;
-allUsersData[currentUserNickname].purchasedItems.moneyBagSymbol = hasMoneyBagSymbol;
-allUsersData[currentUserNickname].activeTheme = activeTheme;
-
-saveAllUsersData();
-console.log("Game state saved for:", currentUserNickname);
-} else {
-console.warn("Attempted to save game without a current user or invalid user data.");
-}
-}
-
-function logoutCurrentUser() {
-saveCurrentUserGame(); // Save before logging out
-currentUserNickname = null;
-localStorage.removeItem('lastLoggedInSlotMachineUser'); // Clear last logged in user
-socialGate.classList.remove('hidden'); // Show social gate again
-authScreen.classList.add('hidden'); // Hide auth screen
-gameContainer.classList.add('hidden'); // Hide game UI
-nicknameInput.value = ''; // Clear input
-authMessage.classList.add('hidden'); // Clear auth message
-startSocialGameBtn.disabled = true; // Disable social gate button again
-showMessage('Вы вышли из системы.', 'info');
-console.log("User logged out.");
-}
-
-function newGame() {
-if (confirm('Вы уверены, что хотите начать новую игру? Ваш текущий прогресс будет потерян.')) {
-if (currentUserNickname && allUsersData[currentUserNickname]) {
-// Reset current user's data to initial state
-allUsersData[currentUserNickname] = {
-credits: initialCredits,
-walletBalance: initialWalletBalance, // Reset wallet balance
-progressiveJackpot: initialJackpot,
-freeSpinsRemaining: 0,
-lastDailyBonusDate: null,
-purchasedItems: {
-lightTheme: false,
-goldenTheme: false,
-moneyBagSymbol: false,
-},
-activeTheme: 'dark',
-achievements: {},
-stats: {
-totalSpins: 0,
-totalCreditsWon: 0,
-jackpotsWon: 0,
-doubleOrNothingWins: 0,
-doubleOrNothingLosses: 0,
-walletDeposits: 0,
-walletWithdrawals: 0,
-}
-};
-// Reload all game state for the current user from the newly reset data
-loadCurrentUserGame();
-showMessage('Новая игра начата!', 'info');
-console.log("New game started for:", currentUserNickname);
-} else {
-console.warn("Attempted to start new game without a current user.");
-}
-}
-}
-
-// --- Daily Bonus Functions ---
-function checkDailyBonus(showClaimedMessage = true) {
-if (!currentUserNickname || !allUsersData[currentUserNickname]) return;
-
-const today = new Date().toISOString().slice(0, 10); // Moreau-MM-DD
-const lastBonusDate = allUsersData[currentUserNickname].lastDailyBonusDate;
-
-if (lastBonusDate !== today) {
-const bonusAmount = 50; // Example bonus
-credits += bonusAmount;
-allUsersData[currentUserNickname].lastDailyBonusDate = today; // Update in user's data
-updateCreditsDisplay(); // This will save
-showMessage(`🎁 Ежедневный бонус! Вы получили ${bonusAmount} кредитов!`, 'info');
-console.log("Daily bonus claimed.");
-} else if (showClaimedMessage) {
-showMessage('Вы уже получили ежедневный бонус сегодня.', 'info');
-console.log("Daily bonus already claimed today.");
-}
-}
-
-
-// --- Sound Setup (Tone.js) ---
-let spinNoise;
-let winChime;
-let jackpotWinChime;
-let freeSpinChime;
-let backgroundAmbient;
-let cardFlipSound;
-let correctSound;
-let incorrectSound;
-
-let audioInitialized = false; // Flag to ensure audio setup runs only once
-
-async function setupAudio() {
-if (audioInitialized) {
-console.log("Audio already initialized.");
-return;
-}
-
-try {
-await Tone.start();
-console.log("Audio context started.");
-
-spinNoise = new Tone.NoiseSynth({
-envelope: { attack: 0.005, decay: 0.08, sustain: 0.0, release: 0.1 },
-noise: { type: "brown" }
-}).toDestination();
-
-winChime = new Tone.Synth({
-oscillator: { type: "triangle" },
-envelope: { attack: 0.01, decay: 0.3, sustain: 0.0, release: 0.8 }
-}).chain(new Tone.Reverb(0.5).toDestination(), Tone.Destination);
-
-jackpotWinChime = new Tone.PolySynth(Tone.Synth, {
-oscillator: { type: "square" },
-envelope: { attack: 0.1, decay: 0.5, sustain: 0.0, release: 1 }
-}).toDestination();
-
-freeSpinChime = new Tone.Synth({
-oscillator: { type: "sine" },
-envelope: { attack: 0.01, decay: 0.2, sustain: 0.0, release: 0.5 }
-}).toDestination();
-
-backgroundAmbient = new Tone.PolySynth(Tone.Synth, {
-oscillator: { type: "sine" },
-envelope: { attack: 2, decay: 2, sustain: 0.5, release: 5 },
-volume: -20
-}).toDestination();
-
-// Use Tone.Loop for background ambient to ensure it plays after context is ready and loops
-new Tone.Loop(time => {
-if (!isMuted) {
-backgroundAmbient.triggerAttackRelease(["C3", "G3", "C4"], "4n", time); // Sustained low chord
-}
-}, "4n").start(0); // Loop every 4 notes (1n means 1 measure)
-Tone.Transport.start(); // Start the Tone.js transport for the loop to play
-
-cardFlipSound = new Tone.NoiseSynth({
-envelope: { attack: 0.001, decay: 0.05, sustain: 0.0, release: 0.05 },
-noise: { type: "white" }, volume: -10
-}).toDestination();
-
-correctSound = new Tone.Synth({
-oscillator: { type: "sine" },
-envelope: { attack: 0.01, decay: 0.1, sustain: 0.0, release: 0.2 },
-volume: -5
-}).toDestination();
-
-incorrectSound = new Tone.Synth({
-oscillator: { type: "triangle" },
-envelope: { attack: 0.01, decay: 0.1, sustain: 0.0, release: 0.2 },
-volume: -5
-}).toDestination();
-
-audioInitialized = true;
-console.log("Audio initialization complete.");
-
-} catch (error) {
-console.error("Failed to start audio context or setup audio:", error);
-showMessage("Ошибка инициализации звука. Пожалуйста, обновите страницу.", "error");
-}
-}
-
-function playSound(type) {
-if (isMuted || Tone.context.state !== 'running' || !audioInitialized) {
-return;
-}
-try {
-if (type === 'spin' && spinNoise) spinNoise.triggerAttackRelease("16n");
-else if (type === 'win' && winChime) { winChime.triggerAttackRelease("G5", "8n"); winChime.triggerAttackRelease("C6", "4n", "+0.2"); }
-else if (type === 'jackpot' && jackpotWinChime) jackpotWinChime.triggerAttackRelease(["C4", "E4", "G4", "C5"], "1n");
-else if (type === 'freeSpin' && freeSpinChime) { freeSpinChime.triggerAttackRelease("E5", "8n"); freeSpinChime.triggerAttackRelease("G5", "8n", "+0.1"); freeSpinChime.triggerAttackRelease("C6", "4n", "+0.2"); }
-else if (type === 'cardFlip' && cardFlipSound) cardFlipSound.triggerAttackRelease("32n");
-else if (type === 'correct' && correctSound) correctSound.triggerAttackRelease("C5", "8n");
-else if (type === 'incorrect' && incorrectSound) incorrectSound.triggerAttackRelease("C3", "8n");
-} catch (e) {
-console.warn("Error playing sound:", e);
-}
-}
-
-function toggleMute() {
-if (!audioInitialized) {
-setupAudio();
-}
-
-isMuted = !isMuted;
-Tone.Destination.mute = isMuted;
-if (isMuted) {
-muteButton.textContent = '🔇 Звук: Выкл';
-muteButton.classList.add('muted');
-console.log("Audio muted.");
-} else {
-muteButton.textContent = '🎶 Звук: Вкл';
-muteButton.classList.remove('muted');
-console.log("Audio unmuted.");
-}
-}
-
-// --- Core Game Functions ---
-function updateCreditsDisplay() {
-creditsDisplay.textContent = `Кредиты: ${credits}`;
-if (currentUserNickname && allUsersData[currentUserNickname]) {
-allUsersData[currentUserNickname].credits = credits;
-}
-// Update wallet modal display if it's open
-if (walletModal.style.display === 'flex') {
-walletCasinoCredits.textContent = credits;
-}
-
-if (credits < currentBet && !isFreeSpinMode) {
-spinButton.disabled = true;
-spinButton.classList.add('opacity-50', 'cursor-not-allowed');
-showMessage('Недостаточно кредитов для вашей ставки!', 'error');
-} else if (!isSpinning) {
-spinButton.disabled = false;
-spinButton.classList.remove('opacity-50', 'cursor-not-allowed');
-hideMessage();
-}
-updateShopButtons();
-updateAchievements();
-saveCurrentUserGame();
-}
-
-function updateWalletDisplay() {
-walletCurrentBalance.textContent = walletBalance;
-if (currentUserNickname && allUsersData[currentUserNickname]) {
-allUsersData[currentUserNickname].walletBalance = walletBalance;
-}
-// Update casino credits display in wallet modal if open
-if (walletModal.style.display === 'flex') {
-walletCasinoCredits.textContent = credits;
-}
-saveCurrentUserGame();
-}
-
-function updateJackpotDisplay() {
-jackpotDisplay.textContent = `Джекпот: ${Math.floor(progressiveJackpot)}`;
-if (currentUserNickname && allUsersData[currentUserNickname]) {
-allUsersData[currentUserNickname].progressiveJackpot = progressiveJackpot;
-}
-saveCurrentUserGame();
-}
-
-function updateFreeSpinsDisplay() {
-if (freeSpinsRemaining > 0) {
-freeSpinsDisplay.textContent = `Бесплатные вращения: ${freeSpinsRemaining}`;
-freeSpinsDisplay.classList.remove('hidden');
-spinButton.disabled = false;
-spinButton.classList.remove('opacity-50', 'cursor-not-allowed');
-showMessage(`У вас ${freeSpinsRemaining} бесплатных вращений!`, 'info');
-} else {
-freeSpinsDisplay.classList.add('hidden');
-isFreeSpinMode = false;
-updateCreditsDisplay(); // Check normal spin button state
-}
-if (currentUserNickname && allUsersData[currentUserNickname]) {
-allUsersData[currentUserNickname].freeSpinsRemaining = freeSpinsRemaining;
-}
-saveCurrentUserGame();
-}
-
-function updateAllAvailableSymbols() {
-allAvailableSymbols = [...baseSymbols];
-if (hasMoneyBagSymbol) {
-allAvailableSymbols.push('💰');
-}
-console.log("Available symbols updated:", allAvailableSymbols);
-}
-
-function showMessage(message, type = 'info') {
-messageText.textContent = message;
-messageBox.classList.remove('hidden', 'error', 'info');
-if (type === 'error') {
-messageBox.classList.add('error');
-} else if (type === 'info') {
-messageBox.classList.add('info');
-} else {
-}
-messageBox.classList.remove('hidden');
-}
-
-function hideMessage() {
-messageBox.classList.add('hidden');
-messageText.textContent = '';
-}
-
-function hideResult() {
-resultBox.classList.add('hidden');
-resultText.textContent = '';
-}
-
-function getRandomSymbol() {
-if (!allAvailableSymbols || allAvailableSymbols.length === 0) {
-console.error("allAvailableSymbols is empty or not defined! Falling back to default symbols.");
-allAvailableSymbols = [...baseSymbols]; // Fallback to base symbols
-if (allAvailableSymbols.length === 0) return '❓'; // Hard fallback
-}
-const randomIndex = Math.floor(Math.random() * allAvailableSymbols.length);
-return allAvailableSymbols[randomIndex];
-}
-
-function animateSingleReel(reelElement, duration, finalSymbol) {
-let startTime = null;
-let interval = 50;
-let animationFrameId;
-
-function animate(currentTime) {
-if (!startTime) startTime = currentTime;
-const elapsed = currentTime - startTime;
-
-if (elapsed < duration) {
-if (elapsed % interval < interval / 2) {
-reelElement.textContent = getRandomSymbol();
-}
-animationFrameId = requestAnimationFrame(animate);
-} else {
-reelElement.textContent = finalSymbol;
-cancelAnimationFrame(animationFrameId);
-}
-}
-animationFrameId = requestAnimationFrame(animate);
-}
-
-function spin() {
-if (isSpinning) return;
-
-if (!audioInitialized) { // Initialize audio on first spin attempt
-setupAudio();
-}
-
-const betAmount = parseInt(betInput.value);
-if (isNaN(betAmount) || betAmount < 10 || betAmount % 10 !== 0) {
-showMessage('Ставка должна быть числом, не менее 10 и кратной 10!', 'error');
-return;
-}
-currentBet = betAmount;
-
-if (credits < currentBet && !isFreeSpinMode) {
-showMessage('Недостаточно кредитов для вашей ставки!', 'error');
-return;
-}
-performSpin();
-}
-
-function performSpin() {
-isSpinning = true;
-spinButton.disabled = true;
-hideMessage();
-hideResult();
-playSound('spin');
-showMessage('Крутим барабаны...', 'info');
-
-if (!isFreeSpinMode) {
-credits -= currentBet;
-progressiveJackpot += currentBet * spinCostMultiplier;
-allUsersData[currentUserNickname].stats.totalSpins++;
-} else {
-freeSpinsRemaining--;
-showMessage(`Бесплатные вращения: ${freeSpinsRemaining} осталось.`, 'info');
-}
-
-updateCreditsDisplay();
-updateJackpotDisplay();
-updateFreeSpinsDisplay();
-
-const finalSymbols = [
-getRandomSymbol(),
-getRandomSymbol(),
-getRandomSymbol()
-];
-
-animateSingleReel(reel1, spinDuration, finalSymbols[0]);
-animateSingleReel(reel2, spinDuration + 200, finalSymbols[1]);
-animateSingleReel(reel3, spinDuration + 400, finalSymbols[2]);
-
-setTimeout(() => {
-// Ensure initial symbols are displayed after animations complete
-reel1.textContent = finalSymbols[0];
-reel2.textContent = finalSymbols[1];
-reel3.textContent = finalSymbols[2];
-
-checkWin(finalSymbols); // Pass finalSymbols to checkWin
-isSpinning = false;
-if (!isFreeSpinMode || freeSpinsRemaining > 0) {
-spinButton.disabled = false;
-}
-hideMessage();
-
-if (isFreeSpinMode && freeSpinsRemaining <= 0) {
-isFreeSpinMode = false;
-updateFreeSpinsDisplay();
-showMessage('Бесплатные вращения закончились!', 'info');
-}
-saveCurrentUserGame();
-}, spinDuration + 500);
-}
-
-function areEquivalent(symA, symB) {
-if (symA === symB) return true;
-if (symA === '⭐' || symB === '⭐') return true;
-return false;
-}
-
-function checkWin(finalSymbols) {
-const [s1, s2, s3] = finalSymbols;
-let message = '';
-let isWin = false;
-let winnings = 0;
-let isJackpot = false;
-let isFreeSpinTrigger = false;
-let canDoubleOrNothing = false;
-
-if (s1 === '7️⃣' && s2 === '7️⃣' && s3 === '7️⃣') {
-message = `💰💰💰 ДЖЕКПОТ! Вы выиграли ${Math.floor(progressiveJackpot)} кредитов! 💰💰💰`;
-winnings = progressiveJackpot;
-progressiveJackpot = initialJackpot;
-playSound('jackpot');
-isWin = true;
-isJackpot = true;
-allUsersData[currentUserNickname].stats.jackpotsWon++;
-}
-else if (s1 === '🌟' && s2 === '🌟' && s3 === '🌟') {
-message = '🎉 Вы выиграли 10 бесплатных вращений! 🎉';
-freeSpinsRemaining += 10;
-isFreeSpinMode = true;
-playSound('freeSpin');
-isWin = true;
-isFreeSpinTrigger = true;
-}
-else if (areEquivalent(s1, s2) && areEquivalent(s2, s3)) {
-message = '🎉 Джекпот! Все совпало! 🎉';
-isWin = true;
-if (s1 === '💰' || s2 === '💰' || s3 === '💰') {
-winnings = currentBet * 7;
-} else {
-winnings = currentBet * 5;
-}
-playSound('win');
-canDoubleOrNothing = true;
-}
-else if (areEquivalent(s1, s2) || areEquivalent(s2, s3) || areEquivalent(s1, s3)) {
-message = '✨ Неплохо! Два символа совпали! ✨';
-isWin = true;
-winnings = currentBet * 2;
-playSound('win');
-canDoubleOrNothing = true;
-}
-else {
-message = 'Попробуй еще раз! 😊';
-isWin = false;
-winnings = 0;
-}
-
-credits += winnings;
-if (isWin) {
-allUsersData[currentUserNickname].stats.totalCreditsWon += winnings;
-}
-updateCreditsDisplay();
-updateJackpotDisplay();
-updateFreeSpinsDisplay();
-
-resultText.textContent = message;
-resultBox.classList.remove('hidden');
-if (isWin) {
-resultBox.classList.remove('error', 'info');
-resultBox.style.backgroundColor = 'rgba(21, 128, 61, 0.6)';
-resultBox.style.borderColor = '#16a34a';
-resultBox.style.color = '#dcfce7';
-} else {
-resultBox.classList.add('error');
-resultBox.classList.remove('info');
-resultBox.style.backgroundColor = 'rgba(185, 28, 28, 0.6)';
-resultBox.style.borderColor = '#b91c1c';
-resultBox.style.color = '#fee2e2';
-}
-
-if (canDoubleOrNothing && winnings > 0 && !isJackpot && !isFreeSpinTrigger && !isFreeSpinMode) {
-doubleOrNothingCurrentWinnings = winnings;
-doubleOrNothingAttempts = 0;
-showDoubleOrNothingModal();
-}
-updateAchievements();
-saveCurrentUserGame();
-}
-
-// --- Shop Functions ---
-function updateShopButtons() {
-if (currentUserNickname === null || !allUsersData[currentUserNickname]) return;
-
-const purchasedItems = allUsersData[currentUserNickname].purchasedItems;
-
-if (purchasedItems.lightTheme) {
-buyLightThemeButton.textContent = 'Куплено';
-buyLightThemeButton.disabled = true;
-} else if (credits < 50) {
-buyLightThemeButton.disabled = true;
-} else {
-buyLightThemeButton.disabled = false;
-}
-
-if (purchasedItems.goldenTheme) {
-buyGoldenThemeButton.textContent = 'Куплено';
-buyGoldenThemeButton.disabled = true;
-} else if (credits < 75) {
-buyGoldenThemeButton.disabled = true;
-} else {
-buyGoldenThemeButton.disabled = false;
-}
-
-if (purchasedItems.moneyBagSymbol) {
-buyMoneyBagSymbolButton.textContent = 'Разблокировано';
-buyMoneyBagSymbolButton.disabled = true;
-} else if (credits < 100) {
-buyMoneyBagSymbolButton.disabled = true;
-} else {
-buyMoneyBagSymbolButton.disabled = false;
-}
-}
-
-function applyTheme(themeName) {
-document.body.classList.remove('light-theme', 'golden-theme');
-gameContainer.classList.remove('light-theme', 'golden-theme');
-// Also apply to overlay elements to ensure consistency
-document.querySelectorAll('.full-screen-overlay, .overlay-content, .overlay-input, .overlay-button').forEach(el => {
-el.classList.remove('light-theme', 'golden-theme');
-});
-
-
-if (themeName === 'light') {
-document.body.classList.add('light-theme');
-gameContainer.classList.add('light-theme');
-document.querySelectorAll('.full-screen-overlay, .overlay-content, .overlay-input, .overlay-button').forEach(el => {
-el.classList.add('light-theme');
-});
-} else if (themeName === 'golden') {
-document.body.classList.add('golden-theme');
-gameContainer.classList.add('golden-theme');
-document.querySelectorAll('.full-screen-overlay, .overlay-content, .overlay-input, .overlay-button').forEach(el => {
-el.classList.add('golden-theme');
-});
-}
-activeTheme = themeName;
-if (currentUserNickname && allUsersData[currentUserNickname]) {
-allUsersData[currentUserNickname].activeTheme = activeTheme;
-saveCurrentUserGame();
-}
-}
-
-function purchaseItem(itemCost, itemType) {
-if (credits >= itemCost) {
-credits -= itemCost;
-updateCreditsDisplay();
-hideMessage();
-
-if (itemType === 'lightTheme') {
-allUsersData[currentUserNickname].purchasedItems.lightTheme = true;
-applyTheme('light');
-showMessage('Светлая тема куплена и активирована!', 'info');
-} else if (itemType === 'goldenTheme') {
-allUsersData[currentUserNickname].purchasedItems.goldenTheme = true;
-applyTheme('golden');
-showMessage('Золотая тема куплена и активирована!', 'info');
-} else if (itemType === 'moneyBagSymbol') {
-allUsersData[currentUserNickname].purchasedItems.moneyBagSymbol = true;
-unlockedSymbols.push('💰');
-updateAllAvailableSymbols();
-showMessage('Символ "Мешок денег" разблокирован!', 'info');
-}
-updateShopButtons();
-saveCurrentUserGame();
-} else {
-showMessage('Недостаточно кредитов для этой покупки!', 'error');
-}
-}
-
-// --- Achievements Functions ---
-function updateAchievements() {
-if (!currentUserNickname || !allUsersData[currentUserNickname]) return;
-
-const userStats = allUsersData[currentUserNickname].stats;
-const userPurchases = allUsersData[currentUserNickname].purchasedItems;
-const userAchievements = allUsersData[currentUserNickname].achievements;
-const currentFreeSpins = freeSpinsRemaining;
-const lastDailyBonusDate = allUsersData[currentUserNickname].lastDailyBonusDate;
-
-ACHIEVEMENTS.forEach(achievement => {
-if (!userAchievements[achievement.id] || !userAchievements[achievement.id].completed) {
-const isCompleted = achievement.check(userStats, credits, userPurchases, currentFreeSpins, lastDailyBonusDate);
-if (isCompleted) {
-userAchievements[achievement.id] = { completed: true, date: new Date().toISOString().slice(0, 10) };
-showMessage(`🏆 Новое достижение разблокировано: "${achievement.name}"!`, 'info');
-}
-}
-});
-saveCurrentUserGame();
-}
-
-function showAchievementsModal() {
-achievementsList.innerHTML = '';
-const userAchievements = allUsersData[currentUserNickname].achievements;
-
-ACHIEVEMENTS.forEach(achievement => {
-const itemDiv = document.createElement('div');
-itemDiv.className = 'achievement-item';
-const isCompleted = userAchievements[achievement.id] && userAchievements[achievement.id].completed;
-if (isCompleted) {
-itemDiv.classList.add('completed');
-}
-
-itemDiv.innerHTML = `
-<div>
-<h3 class="font-bold">${achievement.name}</h3>
-<p class="text-sm text-gray-400">${achievement.description}</p>
-</div>
-<span class="status">${isCompleted ? 'Выполнено!' : 'Не выполнено'}</span>
-`;
-achievementsList.appendChild(itemDiv);
-});
-achievementsModal.style.display = 'flex';
-}
-
-function closeAchievementsModalFunc() {
-achievementsModal.style.display = 'none';
-}
-
-// --- Double or Nothing Functions ---
-function showDoubleOrNothingModal() {
-currentWinAmountDisplay.textContent = doubleOrNothingCurrentWinnings;
-doubleOrNothingMessage.textContent = `У вас есть ${doubleOrNothingMaxAttempts - doubleOrNothingAttempts} попыток.`;
-cardDisplay.textContent = '🂠';
-redCardButton.disabled = false;
-blackCardButton.disabled = false;
-doubleOrNothingModal.style.display = 'flex';
-}
-
-function hideDoubleOrNothingModal() {
-doubleOrNothingModal.style.display = 'none';
-}
-
-function playDoubleOrNothing(choice) {
-if (doubleOrNothingAttempts >= doubleOrNothingMaxAttempts) {
-showMessage('Вы использовали все попытки удвоения!', 'error');
-redCardButton.disabled = true;
-blackCardButton.disabled = true;
-return;
-}
-
-playSound('cardFlip');
-const cardValue = Math.random() < 0.5 ? 'red' : 'black'; // 50% chance
-const cardSymbol = cardValue === 'red' ? '♥️' : '♠️'; // Example symbols
-cardDisplay.textContent = cardSymbol;
-
-doubleOrNothingAttempts++;
-doubleOrNothingMessage.textContent = `У вас есть ${doubleOrNothingMaxAttempts - doubleOrNothingAttempts} попыток.`;
-
-if (choice === cardValue) {
-playSound('correct');
-doubleOrNothingCurrentWinnings *= 2;
-currentWinAmountDisplay.textContent = doubleOrNothingCurrentWinnings;
-allUsersData[currentUserNickname].stats.doubleOrNothingWins++;
-showMessage(`Успех! Ваш выигрыш удвоен до ${doubleOrNothingCurrentWinnings}!`, 'info');
-if (doubleOrNothingAttempts >= doubleOrNothingMaxAttempts) {
-redCardButton.disabled = true;
-blackCardButton.disabled = true;
-}
-} else {
-playSound('incorrect');
-doubleOrNothingCurrentWinnings = 0;
-allUsersData[currentUserNickname].stats.doubleOrNothingLosses++;
-showMessage('Неудача! Вы проиграли выигрыш.', 'error');
-redCardButton.disabled = true;
-blackCardButton.disabled = true;
-}
-updateAchievements();
-saveCurrentUserGame();
-}
-
-function collectWinnings() {
-credits += doubleOrNothingCurrentWinnings;
-updateCreditsDisplay();
-hideDoubleOrNothingModal();
-showMessage(`Вы забрали ${doubleOrNothingCurrentWinnings} кредитов!`, 'info');
-doubleOrNothingCurrentWinnings = 0;
-}
-
-// --- Wallet Functions ---
-function showWalletModal() {
-// Update both credit displays when opening the wallet
-walletCasinoCredits.textContent = credits;
-walletCurrentBalance.textContent = walletBalance;
-walletAmountInput.value = '';
-walletMessage.classList.add('hidden');
-walletModal.style.display = 'flex';
-}
-
-function closeWalletModalFunc() {
-walletModal.style.display = 'none';
-}
-
-function handleVirtualTransaction(type) {
-const amount = parseInt(walletAmountInput.value);
-if (isNaN(amount) || amount <= 0 || amount % 10 !== 0) {
-walletMessage.textContent = 'Пожалуйста, введите положительную сумму, кратную 10.';
-walletMessage.classList.remove('hidden');
-return;
-}
-walletMessage.classList.add('hidden');
-
-if (type === 'deposit') {
-if (walletBalance >= amount) {
-credits += amount;
-walletBalance -= amount;
-allUsersData[currentUserNickname].stats.walletDeposits++; // Track deposit
-showMessage(`Вы успешно пополнили кредиты казино на ${amount} из кошелька.`, 'info');
-} else {
-walletMessage.textContent = 'Недостаточно средств в кошельке для пополнения.';
-walletMessage.classList.remove('hidden');
-return;
-}
-} else if (type === 'withdraw') {
-if (credits >= amount) {
-walletBalance += amount;
-credits -= amount;
-allUsersData[currentUserNickname].stats.walletWithdrawals++; // Track withdrawal
-showMessage(`Вы успешно вывели ${amount} кредитов казино в кошелек.`, 'info');
-} else {
-walletMessage.textContent = 'Недостаточно кредитов казино для вывода.';
-walletMessage.classList.remove('hidden');
-return;
-}
-}
-updateCreditsDisplay(); // Updates main display and saves credits
-updateWalletDisplay(); // Updates wallet modal display and saves walletBalance
-walletAmountInput.value = ''; // Clear input field
-updateAchievements(); // Check achievements after wallet transactions
-saveCurrentUserGame();
-}
-
-
-// --- Event Listeners ---
-
-// Social Gate Events
-socialLinks.forEach(link => {
-link.addEventListener('click', () => {
-startSocialGameBtn.disabled = false; // Enable the "Start Game" button after a link is clicked
-});
-});
-
-startSocialGameBtn.addEventListener('click', () => {
-socialGate.classList.add('hidden'); // Hide social gate
-authScreen.classList.remove('hidden'); // Show authentication screen
-});
-
-
-// Auth screen events
-loginButton.addEventListener('click', () => {
-const nickname = nicknameInput.value.trim();
-if (nickname.length < 3) {
-authMessage.textContent = 'Никнейм должен быть не менее 3 символов.';
-authMessage.classList.remove('hidden');
-return;
-}
-currentUserNickname = nickname;
-loadCurrentUserGame(); // This will handle showing the game UI and setting up state
-authMessage.classList.add('hidden');
-});
-
-nicknameInput.addEventListener('keypress', (e) => {
-if (e.key === 'Enter') {
-loginButton.click();
-}
-});
-
-// Game controls
-spinButton.addEventListener('click', spin);
-muteButton.addEventListener('click', toggleMute);
-newGameButton.addEventListener('click', newGame);
-logoutButton.addEventListener('click', logoutCurrentUser);
-dailyBonusButton.addEventListener('click', () => checkDailyBonus(true));
-
-betInput.addEventListener('input', () => {
-const newBet = parseInt(betInput.value);
-if (!isNaN(newBet) && newBet >= 10 && newBet % 10 === 0) {
-spinButton.textContent = `Крутить! (${newBet} кредитов)`;
-currentBet = newBet;
-updateCreditsDisplay(); // This will re-evaluate if spin button should be enabled
-} else {
-spinButton.textContent = `Крутить! (Неверная ставка)`;
-}
-hideMessage();
-});
-
-// Shop button listeners
-buyLightThemeButton.addEventListener('click', () => purchaseItem(50, 'lightTheme'));
-buyGoldenThemeButton.addEventListener('click', () => purchaseItem(75, 'goldenTheme'));
-buyMoneyBagSymbolButton.addEventListener('click', () => purchaseItem(100, 'moneyBagSymbol'));
-
-// Achievements modal events
-achievementsButton.addEventListener('click', showAchievementsModal);
-closeAchievementsModal.addEventListener('click', closeAchievementsModalFunc);
-
-// Double or Nothing modal events
-redCardButton.addEventListener('click', () => playDoubleOrNothing('red'));
-blackCardButton.addEventListener('click', () => playDoubleOrNothing('black'));
-collectWinningsButton.addEventListener('click', collectWinnings);
-
-// Wallet modal events
-openWalletButton.addEventListener('click', showWalletModal);
-closeWalletModal.addEventListener('click', closeWalletModalFunc);
-depositButton.addEventListener('click', () => handleVirtualTransaction('deposit'));
-withdrawButton.addEventListener('click', () => handleVirtualTransaction('withdraw'));
-walletAmountInput.addEventListener('keypress', (e) => {
-if (e.key === 'Enter') {
-// For simplicity, let's make enter trigger a deposit if there's an amount
-if (walletAmountInput.value && parseInt(walletAmountInput.value) > 0) {
-handleVirtualTransaction('deposit');
-}
-}
-});
-
-
-// --- Initial Setup on Page Load ---
-window.onload = function() {
-loadAllUsersData();
-const lastLoggedInNickname = localStorage.getItem('lastLoggedInSlotMachineUser');
-console.log("Window loaded. Last logged in nickname:", lastLoggedInNickname);
-
-// Display social gate by default
-socialGate.classList.remove('hidden');
-authScreen.classList.add('hidden');
-gameContainer.classList.add('hidden');
-
-// Set initial reel symbols for display before any spin
-reel1.textContent = '🍒';
-reel2.textContent = '🍋';
-reel3.textContent = '🍊';
-};
-</script>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, createContext, useContext, useMemo, useRef } = React;
+        const { Html5Qrcode } = window;
+        const { XLSX } = window;
+        const { Chart } = window;
+
+        // --- Contexts ---
+        const NavigationContext = createContext();
+        const DataContext = createContext();
+
+        const useNavigation = () => useContext(NavigationContext);
+        const useData = () => useContext(DataContext);
+
+        // --- Hooks ---
+        function useLocalStorage(key, initialValue) {
+            const [storedValue, setStoredValue] = useState(() => {
+                try { return JSON.parse(window.localStorage.getItem(key)) ?? initialValue; } catch { return initialValue; }
+            });
+            const setValue = (value) => {
+                try { const valueToStore = value instanceof Function ? value(storedValue) : value; setStoredValue(valueToStore); window.localStorage.setItem(key, JSON.stringify(valueToStore)); } catch {}
+            };
+            return [storedValue, setValue];
+        }
+
+        // --- Providers ---
+        function DataProvider({ children }) {
+            const [products, setProducts] = useLocalStorage('products', []);
+            const [sales, setSales] = useLocalStorage('sales', []);
+            const [movements, setMovements] = useLocalStorage('movements', []);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => { setLoading(false); }, []);
+
+            // Автоматическое резервное копирование каждую ночь
+            useEffect(() => {
+                const autoBackup = () => {
+                    const now = new Date();
+                    const hours = now.getHours();
+                    const minutes = now.getMinutes();
+                    if (hours === 0 && minutes === 0) { // Срабатывает в 00:00
+                        const data = { products, sales, movements, exportDate: now.toISOString(), version: 'v6', backupType: 'auto' };
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `my_shop_auto_backup_${now.toISOString().split('T')[0]}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }
+                };
+
+                // Запуск сразу при загрузке
+                autoBackup();
+
+                // Установка таймера на следующую полночь
+                const now = new Date();
+                const nextMidnight = new Date(now);
+                nextMidnight.setHours(24, 0, 0, 0);
+                const timeUntilMidnight = nextMidnight - now;
+
+                const timerId = setTimeout(autoBackup, timeUntilMidnight);
+
+                return () => clearTimeout(timerId);
+            }, [products, sales, movements]);
+
+            const saveProduct = (productData) => {
+                const dataToSave = { ...productData, stock: parseFloat(productData.stock) || 0, low_stock_threshold: parseFloat(productData.low_stock_threshold) || 5, unit: productData.unit || 'pcs' };
+                setProducts(prev => prev.some(p => p.id === productData.id) ? prev.map(p => p.id === productData.id ? dataToSave : p) : [...prev, dataToSave]);
+            };
+
+            const getProductByBarcode = (barcode) => products.find(p => p.barcode === barcode);
+
+            const addMovement = (movementData) => setMovements(prev => [movementData, ...prev]);
+            const addSale = (saleData) => setSales(prev => [saleData, ...prev]);
+
+            const handleCheckout = (cart) => {
+                const total = cart.reduce((acc, item) => acc + (item.sale_price * item.quantity), 0);
+                const profit = cart.reduce((acc, item) => acc + ((item.sale_price - item.purchase_price) * item.quantity), 0);
+                const saleData = {
+                    id: `sale_${Date.now()}`,
+                    items: cart.map(item => ({
+                        id: item.id, name: item.name, quantity: parseFloat(item.quantity.toFixed(item.unit === 'kg' ? 3 : 0)),
+                        sale_price: item.sale_price, purchase_price: item.purchase_price, unit: item.unit
+                    })),
+                    total: parseFloat(total.toFixed(2)), profit: parseFloat(profit.toFixed(2)), createdAt: new Date().toISOString(), type: 'sale'
+                };
+                addSale(saleData);
+
+                let updatedProducts = [...products];
+                for (const item of cart) {
+                    const newStock = item.stock - item.quantity;
+                    updatedProducts = updatedProducts.map(p => p.id === item.id ? { ...p, stock: newStock } : p);
+                    addMovement({
+                        id: `move_${Date.now()}_${item.id}`, productId: item.id, name: item.name, type: 'sale', quantity: -item.quantity, unit: item.unit, date: new Date().toISOString()
+                    });
+                }
+                setProducts(updatedProducts);
+            };
+
+            const handleReturn = ({ product, quantity, salePrice }) => {
+                const qty = parseFloat(quantity);
+                if (!product || isNaN(qty) || qty <= 0) throw new Error('Укажите корректное количество для возврата.');
+                const finalSalePrice = salePrice != null && !isNaN(parseFloat(salePrice)) ? parseFloat(salePrice) : (product.sale_price || 0);
+                const purchasePrice = product.purchase_price || 0;
+                const newStock = parseFloat((product.stock + qty).toFixed(product.unit === 'kg' ? 3 : 0));
+                saveProduct({ ...product, stock: newStock });
+                addMovement({
+                    id: `move_${Date.now()}_${product.id}`, productId: product.id, name: product.name, type: 'return', quantity: qty, unit: product.unit, date: new Date().toISOString()
+                });
+                const total = -(finalSalePrice * qty);
+                const profit = -((finalSalePrice - purchasePrice) * qty);
+                const returnSale = {
+                    id: `return_${Date.now()}`,
+                    items: [{ id: product.id, name: product.name, quantity: qty, sale_price: finalSalePrice, purchase_price: purchasePrice, unit: product.unit }],
+                    total: parseFloat(total.toFixed(2)), profit: parseFloat(profit.toFixed(2)), createdAt: new Date().toISOString(), type: 'return'
+                };
+                addSale(returnSale);
+            };
+
+            const handleStockMovement = (product, quantity, type) => {
+                const quantityFloat = parseFloat(quantity);
+                const movementQuantity = type === 'in' ? quantityFloat : -quantityFloat;
+                const newStock = product.stock + movementQuantity;
+                if (newStock < 0) throw new Error(`Нельзя списать больше, чем есть на складе! Текущий остаток: ${product.stock} ${product.unit}`);
+                saveProduct({ ...product, stock: parseFloat(newStock.toFixed(product.unit === 'kg' ? 3 : 0)) });
+                addMovement({
+                    id: `move_${Date.now()}`, productId: product.id, name: product.name, type, quantity: movementQuantity, unit: product.unit, date: new Date().toISOString()
+                });
+            };
+
+            const categories = useMemo(() => [...new Set(products.map(p => p.category).filter(Boolean))], [products]);
+            const lowStockItems = useMemo(() => products.filter(p => p.stock <= p.low_stock_threshold), [products]);
+
+            const handleResetData = () => {
+                ['products', 'sales', 'movements'].forEach(key => window.localStorage.removeItem(key));
+                setProducts([]); setSales([]); setMovements([]);
+            };
+
+            const handleImportData = (data) => {
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.products && parsed.sales && parsed.movements) {
+                        window.localStorage.setItem('products', JSON.stringify(parsed.products));
+                        window.localStorage.setItem('sales', JSON.stringify(parsed.sales));
+                        window.localStorage.setItem('movements', JSON.stringify(parsed.movements));
+                        setProducts(parsed.products); setSales(parsed.sales); setMovements(parsed.movements);
+                        return { success: true, message: 'Данные успешно импортированы!' };
+                    }
+                    return { success: false, message: 'Неверный формат файла.' };
+                } catch { return { success: false, message: 'Ошибка чтения/парсинга файла JSON.' }; }
+            };
+
+            const handleExportData = () => {
+                const data = { products, sales, movements, exportDate: new Date().toISOString(), version: 'v6' };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = `my_shop_backup_${new Date().toISOString().split('T')[0]}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            };
+
+            const handleExportSales = () => {
+                if (!XLSX) { alert("Ошибка: Библиотека Excel (XLSX) не загружена."); return; }
+                const dataToExport = sales.map(sale => ({
+                    id: sale.id,
+                    type: sale.type,
+                    total: sale.total,
+                    profit: sale.profit,
+                    createdAt: sale.createdAt,
+                    items: sale.items.map(item => `${item.name} (${item.quantity} ${item.unit})`).join(', ')
+                }));
+                const ws = XLSX.utils.json_to_sheet(dataToExport);
+                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Продажи"); XLSX.writeFile(wb, "sales_export.xlsx");
+            };
+
+            const handleExportMovements = () => {
+                if (!XLSX) { alert("Ошибка: Библиотека Excel (XLSX) не загружена."); return; }
+                const dataToExport = movements.map(move => ({
+                    id: move.id,
+                    productId: move.productId,
+                    name: move.name,
+                    type: move.type,
+                    quantity: move.quantity,
+                    unit: move.unit,
+                    date: move.date
+                }));
+                const ws = XLSX.utils.json_to_sheet(dataToExport);
+                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Движения"); XLSX.writeFile(wb, "movements_export.xlsx");
+            };
+
+            const exportStatsToExcel = (stats) => {
+                if (!XLSX) { alert("Ошибка: Библиотека Excel (XLSX) не загружена."); return; }
+                const statsSheet = [
+                    { Показатель: 'Общее количество чеков', Значение: stats.salesCount },
+                    { Показатель: 'Общая выручка', Значение: stats.totalRevenue },
+                    { Показатель: 'Общая прибыль', Значение: stats.totalProfit },
+                    { Показатель: 'Средний чек', Значение: stats.avgCheck },
+                    { Показатель: 'Средняя прибыль', Значение: stats.avgProfit },
+                ];
+                const topProductsSheet = stats.topProducts.map(p => ({ Название: p.name, Количество: p.count, Выручка: p.revenue, Прибыль: p.profit }));
+                const topCategoriesSheet = stats.topCategories.map(c => ({ Категория: c.name, Выручка: c.revenue, Прибыль: c.profit }));
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(statsSheet), "Основные показатели");
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(topProductsSheet), "Топ-5 товаров");
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(topCategoriesSheet), "Топ-5 категорий");
+                XLSX.writeFile(wb, "statistics_export.xlsx");
+            };
+
+            const value = useMemo(() => ({
+                products, sales, movements, loading, categories, lowStockItems, saveProduct, getProductByBarcode,
+                handleCheckout, handleStockMovement, handleResetData, handleImportData, handleExportData, handleReturn,
+                handleExportSales, handleExportMovements, exportStatsToExcel,
+            }), [products, sales, movements, loading, categories, lowStockItems]);
+
+            return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+        }
+
+        function NavigationProvider({ children }) {
+            const [page, setPage] = useState('dashboard');
+            const navigate = (pageName) => setPage(pageName);
+            const value = useMemo(() => ({ page, navigate }), [page]);
+            return <NavigationContext.Provider value={value}>{children}</NavigationContext.Provider>;
+        }
+
+        // --- Components ---
+        function App() {
+            const { page } = useNavigation();
+            let currentPage;
+            switch (page) {
+                case 'inventory': currentPage = <InventoryPage />; break;
+                case 'pos': currentPage = <POSPage />; break;
+                case 'returns': currentPage = <ReturnsPage />; break;
+                case 'stock': currentPage = <StockPage />; break;
+                case 'stats': currentPage = <StatsPage />; break;
+                case 'checks': currentPage = <ChecksPage />; break;
+                case 'categories': currentPage = <CategoriesPage />; break;
+                case 'settings': currentPage = <SettingsPage />; break;
+                default: currentPage = <DashboardPage />;
+            }
+            return <Layout>{currentPage}</Layout>;
+        }
+
+        function Layout({ children }) {
+            const { page, navigate } = useNavigation();
+            const { lowStockItems } = useData();
+            const navItems = [
+                { id: 'dashboard', label: 'Главная', icon: '🏠', badge: lowStockItems.length },
+                { id: 'pos', label: 'Касса', icon: '🛒' },
+                { id: 'returns', label: 'Возврат', icon: '↩️' },
+                { id: 'inventory', label: 'Товары', icon: '📦' },
+                { id: 'stock', label: 'Склад', icon: '🏬' },
+                { id: 'stats', label: 'Статистика', icon: '📊' },
+                { id: 'checks', label: 'Чеки', icon: '🧾' },
+                { id: 'categories', label: 'Категории', icon: '🏷️' },
+                { id: 'settings', label: 'Настройки', icon: '⚙️' },
+            ];
+
+            return (
+                <div className="flex h-screen w-full">
+                    <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200">
+                        <div className="p-4 flex flex-col items-center border-b">
+                            <h1 className="text-xl font-bold text-blue-500">💰 My Shop v8</h1>
+                        </div>
+                        <nav className="flex-1 p-2 space-y-1">
+                            {navItems.map(item => (
+                                <button key={item.id} onClick={() => navigate(item.id)}
+                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                                        page === item.id ? 'bg-blue-100 text-blue-500 font-medium' : 'text-gray-600 hover:bg-blue-50'
+                                    }`}>
+                                    <span className="text-lg">{item.icon}</span>
+                                    <span className="text-sm">{item.label}</span>
+                                    {item.badge > 0 && <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{item.badge}</span>}
+                                </button>
+                            ))}
+                        </nav>
+                    </aside>
+                    <main className="flex-1 overflow-auto p-2 md:p-4 pb-20 md:pb-4">{children}</main>
+                    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-1 z-40">
+                        {navItems.map(item => (
+                            <button key={item.id} onClick={() => navigate(item.id)}
+                                className={`flex flex-col items-center justify-center p-2 rounded-lg w-full ${
+                                    page === item.id ? 'bg-blue-50 text-blue-500' : ''
+                                }`}>
+                                <div className="relative">
+                                    <span className="text-xl">{item.icon}</span>
+                                    {item.badge > 0 && <span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs font-bold px-1 rounded-full">{item.badge}</span>}
+                                </div>
+                                <span className="text-xs mt-1">{item.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                </div>
+            );
+        }
+
+        function SettingsPage() {
+            const { navigate } = useNavigation();
+            return (
+                <div className="space-y-6 fade-in">
+                    <h1 className="text-2xl font-bold">Настройки</h1>
+                    <DataManagement />
+                    <FullReset />
+                    <button onClick={() => navigate('returns')} className="w-full py-2.5 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium flex items-center justify-center gap-2">
+                        <span>↩️</span> <span>Возврат</span>
+                    </button>
+                </div>
+            );
+        }
+
+        function DataManagement() {
+            const { handleExportData, handleImportData, handleExportSales, handleExportMovements } = useData();
+            const fileInputRef = useRef(null);
+            const [message, setMessage] = useState(null);
+
+            const handleFileImport = (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const result = handleImportData(event.target.result);
+                    setMessage(result.message);
+                    if (result.success) setTimeout(() => setMessage(null), 3000);
+                };
+                reader.readAsText(file);
+                if (fileInputRef.current) fileInputRef.current.value = null;
+            };
+
+            const triggerFileInput = () => fileInputRef.current.click();
+
+            return (
+                <div className="bg-white p-4 rounded-lg shadow">
+                    <h2 className="text-lg font-bold mb-2">Бэкап</h2>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <button onClick={handleExportData} className="flex-1 py-2 px-3 bg-green-500 hover:bg-green-600 text-white rounded text-sm font-medium">[⬇️] Экспорт (Все данные)</button>
+                        <input type="file" ref={fileInputRef} onChange={handleFileImport} className="hidden" accept=".json" />
+                        <button onClick={triggerFileInput} className="flex-1 py-2 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded text-sm font-medium">[⬆️] Импорт</button>
+                    </div>
+                    <div className="mt-2 flex flex-col sm:flex-row gap-2">
+                        <button onClick={handleExportSales} className="flex-1 py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium">[⬇️] Экспорт Продаж</button>
+                        <button onClick={handleExportMovements} className="flex-1 py-2 px-3 bg-purple-500 hover:bg-purple-600 text-white rounded text-sm font-medium">[⬇️] Экспорт Движений</button>
+                    </div>
+                    {message && <p className={`mt-2 text-xs ${message.startsWith('Данные успешно') ? 'text-green-500' : 'text-red-500'}`}>{message}</p>}
+                </div>
+            );
+        }
+
+        function FullReset() {
+            const { handleResetData } = useData();
+            const handleReset = () => {
+                if (window.confirm('Удалить ВСЕ данные? Действие необратимо!')) { handleResetData(); window.location.reload(); }
+            };
+            return (
+                <div className="bg-red-100 p-4 rounded-lg shadow border-l-4 border-red-500">
+                    <h2 className="text-lg font-bold text-red-500">Сброс</h2>
+                    <button onClick={handleReset} className="w-full py-2 px-3 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-medium">[💣] Удалить все</button>
+                </div>
+            );
+        }
+
+        function DashboardPage() {
+            const { navigate } = useNavigation();
+            const { lowStockItems } = useData();
+
+            return (
+                <div className="fade-in">
+                    <h1 className="text-2xl font-bold mb-4">Рабочий стол</h1>
+                    {lowStockItems.length > 0 && (
+                        <div className="bg-red-100 p-3 rounded-lg mb-4 border-l-4 border-red-500">
+                            <h2 className="text-lg font-bold text-red-600 mb-1">🚨 Низкий остаток ({lowStockItems.length})</h2>
+                            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-auto">
+                                {lowStockItems.map(p => (
+                                    <span key={p.id} className="bg-red-200 text-red-800 text-xs px-2 py-0.5 rounded-full font-medium">
+                                        {p.name} ({p.stock.toFixed(p.unit === 'kg' ? 3 : 0)} {p.unit})
+                                    </span>
+                                ))}
+                            </div>
+                            <div className="mt-2 flex gap-2">
+                                <button onClick={() => navigate('inventory')} className="text-xs text-red-600 font-medium hover:underline">Товары</button>
+                                <button onClick={() => navigate('stock')} className="text-xs text-red-600 font-medium hover:underline">Склад</button>
+                            </div>
+                        </div>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <DashboardCard title="Касса" description="Начать продажу" icon="🛒" onClick={() => navigate('pos')} color="blue" />
+                        <DashboardCard title="Возврат" description="Оформить возврат" icon="↩️" onClick={() => navigate('returns')} color="gray" />
+                        <DashboardCard title="Товары" description="Управление каталогом" icon="📦" onClick={() => navigate('inventory')} color="green" />
+                        <DashboardCard title="Склад" description="Приход/списание" icon="🏬" onClick={() => navigate('stock')} color="orange" />
+                        <DashboardCard title="Статистика" description="Аналитика" icon="📊" onClick={() => navigate('stats')} color="purple" />
+                        <DashboardCard title="Чеки" description="Просмотр всех чеков" icon="🧾" onClick={() => navigate('checks')} color="yellow" />
+                        <DashboardCard title="Категории" description="Управление категориями" icon="🏷️" onClick={() => navigate('categories')} color="pink" />
+                        <DashboardCard title="Настройки" description="Бэкап" icon="⚙️" onClick={() => navigate('settings')} color="gray" />
+                    </div>
+                </div>
+            );
+        }
+
+        const DashboardCard = ({ title, description, icon, onClick, color }) => {
+            const colors = { blue: "bg-blue-500 hover:bg-blue-600", green: "bg-green-500 hover:bg-green-600", orange: "bg-orange-500 hover:bg-orange-600", purple: "bg-purple-500 hover:bg-purple-600", gray: "bg-gray-500 hover:bg-gray-600", yellow: "bg-yellow-500 hover:bg-yellow-600", pink: "bg-pink-500 hover:bg-pink-600" };
+            return (
+                <button onClick={onClick} className={`bg-white p-4 rounded-lg shadow text-white ${colors[color] || colors.blue} transition-transform hover:scale-[1.02]`}>
+                    <span className="text-2xl mb-1 block">{icon}</span>
+                    <h3 className="font-bold mb-1">{title}</h3>
+                    <p className="text-xs">{description}</p>
+                </button>
+            );
+        };
+
+        function POSPage() {
+            const { products, getProductByBarcode, handleCheckout } = useData();
+            const [cart, setCart] = useState([]);
+            const [showScanner, setShowScanner] = useState(false);
+            const [message, setMessage] = useState(null);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [weightPrompt, setWeightPrompt] = useState(null);
+            const [tempProduct, setTempProduct] = useState(null);
+
+            const showMessage = (text, type = 'success') => { setMessage({ text, type }); setTimeout(() => setMessage(null), 3000); };
+
+            const addItemToCart = (product, quantity = 1) => {
+                setSearchQuery('');
+                if (product.unit === 'kg' && quantity === 1) { setTempProduct(product); setWeightPrompt(true); return; }
+                if (product.stock < quantity) { showMessage(`Недостаточно "${product.name}"! Осталось: ${product.stock.toFixed(product.unit === 'kg' ? 3 : 0)}`, 'error'); return; }
+                setCart(prev => {
+                    const existing = prev.find(i => i.id === product.id);
+                    if (existing) {
+                        const newQty = existing.quantity + quantity;
+                        if (newQty > product.stock) { showMessage(`Больше нет "${product.name}"!`, 'error'); return prev; }
+                        return prev.map(i => i.id === product.id ? { ...i, quantity: newQty } : i);
+                    }
+                    return [...prev, { ...product, quantity }];
+                });
+                showMessage(`Добавлен: ${product.name}`);
+            };
+
+            const handleWeightSubmit = (weight) => { if (tempProduct && weight > 0) addItemToCart(tempProduct, weight); setWeightPrompt(false); setTempProduct(null); };
+
+            const onScanSuccess = (decodedText) => { const product = getProductByBarcode(decodedText); if (product) addItemToCart(product); else showMessage('Товар не найден!', 'error'); setShowScanner(false); };
+
+            const removeFromCart = (productId) => setCart(prev => prev.filter(i => i.id !== productId));
+
+            const updateQuantity = (productId, newQuantity) => {
+                const productInInventory = products.find(p => p.id === productId);
+                const quantityFloat = parseFloat(newQuantity) || 0;
+                if (quantityFloat > productInInventory.stock) { showMessage(`Максимум: ${productInInventory.stock.toFixed(productInInventory.unit === 'kg' ? 3 : 0)}`, 'error'); newQuantity = productInInventory.stock; }
+                if (quantityFloat <= 0) { removeFromCart(productId); return; }
+                setCart(prev => prev.map(i => i.id === productId ? { ...i, quantity: quantityFloat } : i));
+            };
+
+            const total = cart.reduce((acc, i) => acc + (i.sale_price * i.quantity), 0);
+
+            const onCheckout = () => {
+                if (cart.length === 0) return;
+                try { handleCheckout(cart); setCart([]); showMessage('Продажа оформлена!'); } catch { showMessage('Ошибка при оформлении!', 'error'); }
+            };
+
+            const filteredProducts = useMemo(() => {
+                if (searchQuery.length < 2) return [];
+                return products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 10);
+            }, [searchQuery, products]);
+
+            return (
+                <div className="flex flex-col md:flex-row gap-4 h-full fade-in">
+                    <div className="bg-white rounded-lg shadow w-full md:w-2/3 h-full flex flex-col">
+                        <h2 className="text-lg font-bold p-2 border-b">Чек</h2>
+                        <div className="flex-1 overflow-auto p-2 space-y-2">
+                            {cart.length === 0 ? <p className="text-gray-500 text-center py-6">Чек пуст</p> : cart.map(item => (
+                                <div key={item.id} className="flex items-center gap-2 p-2 rounded bg-gray-50">
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium">{item.name}</p>
+                                        <p className="text-xs text-gray-500">{item.sale_price} ₽ / {item.unit}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <input type="number" step={item.unit === 'kg' ? "0.001" : "1"} value={item.quantity}
+                                            onChange={(e) => updateQuantity(item.id, e.target.value)} className="w-20 px-2 py-1 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-center text-sm"
+                                            max={item.stock} min={item.unit === 'kg' ? "0.001" : "1"} />
+                                        <span className="font-bold text-sm w-20 text-right">{(item.sale_price * item.quantity).toFixed(2)} ₽</span>
+                                    </div>
+                                    <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-700 text-lg">🗑️</button>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-2 border-t">
+                            <div className="flex justify-between items-center text-lg font-bold">
+                                <span>Итого:</span><span>{total.toFixed(2)} ₽</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="w-full md:w-1/3 space-y-3">
+                        <button className="w-full py-2.5 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium" onClick={() => setShowScanner(true)}>[|||] Сканировать</button>
+                        <div className="bg-white p-3 rounded-lg shadow">
+                            <h3 className="text-sm font-medium mb-1">Поиск</h3>
+                            <input type="text" placeholder="2+ символа..." className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                            {filteredProducts.length > 0 && (
+                                <div className="mt-2 space-y-1 max-h-40 overflow-auto">
+                                    {filteredProducts.map(p => (
+                                        <div key={p.id} className="flex justify-between items-center p-1.5 bg-gray-50 rounded">
+                                            <div>
+                                                <p className="text-sm font-medium">{p.name}</p>
+                                                <p className="text-xs text-gray-500">{p.sale_price} ₽ / {p.unit} (Ост: {p.stock.toFixed(p.unit === 'kg' ? 3 : 0)})</p>
+                                            </div>
+                                            <button onClick={() => addItemToCart(p)} className="px-2 py-0.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs font-medium" disabled={p.stock <= 0}>
+                                                {p.unit === 'kg' ? 'Вес' : '+1'}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <div className="sticky bottom-0 bg-white p-3 rounded-lg shadow border-t">
+                            <button className="w-full py-2.5 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium" onClick={onCheckout} disabled={cart.length === 0}>$ Оформить продажу</button>
+                        </div>
+                    </div>
+                    {showScanner && <Modal title="Сканер" onClose={() => setShowScanner(false)}><BarcodeScannerComponent onSuccess={onScanSuccess} onError={(err) => console.warn(err)} /></Modal>}
+                    {weightPrompt && tempProduct && <WeightInputModal product={tempProduct} onClose={() => setWeightPrompt(false)} onConfirm={handleWeightSubmit} />}
+                    {message && <Notification type={message.type} message={message.text} />}
+                </div>
+            );
+        }
+
+        function ReturnsPage() {
+            const { products, getProductByBarcode, handleReturn } = useData();
+            const [selectedProduct, setSelectedProduct] = useState(null);
+            const [quantity, setQuantity] = useState('');
+            const [salePrice, setSalePrice] = useState('');
+            const [searchQuery, setSearchQuery] = useState('');
+            const [showScanner, setShowScanner] = useState(false);
+            const [message, setMessage] = useState(null);
+
+            const showMessage = (text, type = 'success') => { setMessage({ text, type }); setTimeout(() => setMessage(null), 3000); };
+
+            const filteredProducts = useMemo(() => {
+                if (searchQuery.length < 2) return [];
+                return products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 10);
+            }, [searchQuery, products]);
+
+            const onScanSuccess = (decodedText) => {
+                const product = getProductByBarcode(decodedText);
+                if (product) { setSelectedProduct(product); setSalePrice(product.sale_price || ''); }
+                else showMessage('Товар не найден!', 'error');
+                setShowScanner(false);
+            };
+
+            const submitReturn = (e) => {
+                e.preventDefault();
+                try {
+                    if (!selectedProduct) { showMessage('Выберите товар', 'error'); return; }
+                    const qty = parseFloat(quantity);
+                    if (isNaN(qty) || qty <= 0) { showMessage('Укажите количество > 0', 'error'); return; }
+                    handleReturn({ product: selectedProduct, quantity: qty, salePrice: salePrice !== '' ? parseFloat(salePrice) : undefined });
+                    setQuantity(''); showMessage('Возврат оформлен!');
+                } catch (err) { showMessage(err.message || 'Ошибка при возврате', 'error'); }
+            };
+
+            return (
+                <div className="space-y-4 fade-in">
+                    <h1 className="text-2xl font-bold">Возврат</h1>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-white p-4 rounded-lg shadow md:col-span-2">
+                            <h2 className="text-lg font-medium mb-3">Выбор товара</h2>
+                            <div className="flex gap-2 mb-3">
+                                <button className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium" onClick={() => setShowScanner(true)}>[|||] Сканировать</button>
+                                <div className="flex-1">
+                                    <input type="text" className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" placeholder="Поиск: 2+ символа..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                                    {filteredProducts.length > 0 && (
+                                        <div className="mt-2 space-y-1 max-h-40 overflow-auto">
+                                            {filteredProducts.map(p => (
+                                                <button key={p.id} className={`w-full text-left p-1.5 rounded ${
+                                                    selectedProduct?.id === p.id ? 'bg-blue-100' : 'bg-gray-50 hover:bg-gray-100'
+                                                }`} onClick={() => { setSelectedProduct(p); setSalePrice(p.sale_price || ''); }}>
+                                                    <div className="flex justify-between items-center">
+                                                        <div>
+                                                            <p className="text-sm font-medium">{p.name}</p>
+                                                            <p className="text-xs text-gray-500">Цена: {p.sale_price} ₽ / {p.unit}</p>
+                                                        </div>
+                                                        <span className="text-xs text-gray-500">Ост: {p.stock.toFixed(p.unit === 'kg' ? 3 : 0)} {p.unit}</span>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <form onSubmit={submitReturn} className="space-y-3">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Выбранный товар</label>
+                                    <input className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white text-sm" value={selectedProduct ? selectedProduct.name : ''} placeholder="Не выбран" disabled />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Количество ({selectedProduct?.unit || 'шт'})</label>
+                                        <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" step={selectedProduct?.unit === 'kg' ? '0.001' : '1'} min={selectedProduct?.unit === 'kg' ? '0.001' : '1'} value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Цена продажи (₽ / {selectedProduct?.unit || 'шт'})</label>
+                                        <input type="number" className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" step="0.01" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} placeholder={selectedProduct ? String(selectedProduct.sale_price || 0) : ''} />
+                                    </div>
+                                </div>
+                                <button type="submit" className="w-full py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium disabled:opacity-50" disabled={!selectedProduct || !quantity}>Оформить возврат</button>
+                            </form>
+                        </div>
+                        <div className="bg-white p-4 rounded-lg shadow">
+                            <h2 className="text-lg font-medium mb-3">Пояснения</h2>
+                            <ul className="space-y-1 text-xs text-gray-600">
+                                <li>• Возврат увеличивает остаток на складе.</li>
+                                <li>• В движениях появляется запись "Возврат".</li>
+                                <li>• В статистике вычитается из выручки и прибыли.</li>
+                                <li>• Можно настроить цену возврата вручную.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    {showScanner && <Modal title="Сканер" onClose={() => setShowScanner(false)}><BarcodeScannerComponent onSuccess={onScanSuccess} onError={(err) => console.warn(err)} /></Modal>}
+                    {message && <Notification type={message.type} message={message.text} />}
+                </div>
+            );
+        }
+
+        function InventoryPage() {
+            const { products, loading, saveProduct, getProductByBarcode, categories, lowStockItems } = useData();
+            const [showModal, setShowModal] = useState(false);
+            const [productToEdit, setProductToEdit] = useState(null);
+            const [search, setSearch] = useState('');
+            const [filterCategory, setFilterCategory] = useState('all');
+            const { navigate } = useNavigation();
+            const fileInputRef = useRef(null);
+
+            const filteredProducts = useMemo(() => {
+                return products.filter(p => {
+                    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || (p.barcode && p.barcode.includes(search));
+                    const matchesCategory = filterCategory === 'all' || (filterCategory === 'none' && !p.category) || p.category === filterCategory;
+                    return matchesSearch && matchesCategory;
+                });
+            }, [products, search, filterCategory]);
+
+            const handleExport = () => {
+                if (!XLSX) { alert("Ошибка: Библиотека Excel (XLSX) не загружена."); return; }
+                const dataToExport = products.map(p => ({
+                    id: p.id, name: p.name, barcode: p.barcode || '',
+                    purchase_price: p.purchase_price, sale_price: p.sale_price,
+                    stock: p.stock, category: p.category || '', unit: p.unit || 'pcs',
+                    low_stock_threshold: p.low_stock_threshold || 5,
+                }));
+                const ws = XLSX.utils.json_to_sheet(dataToExport);
+                const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Товары"); XLSX.writeFile(wb, "products_export.xlsx");
+            };
+
+            const handleImport = (event) => {
+                const file = event.target.files[0]; if (!file || !XLSX) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        const json = XLSX.utils.sheet_to_json(worksheet);
+                        let importedCount = 0, skippedCount = 0;
+                        json.forEach(item => {
+                            if (!item.name || item.sale_price == null) { skippedCount++; return; }
+                            const id = item.id || `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                            if (item.barcode) {
+                                const existingByBarcode = getProductByBarcode(item.barcode);
+                                if (existingByBarcode && existingByBarcode.id !== id) { skippedCount++; return; }
+                            }
+                            const productData = {
+                                id, name: String(item.name), barcode: item.barcode ? String(item.barcode) : '',
+                                purchase_price: parseFloat(item.purchase_price) || 0, sale_price: parseFloat(item.sale_price) || 0,
+                                stock: parseFloat(item.stock) || 0, category: item.category ? String(item.category) : '',
+                                unit: item.unit ? String(item.unit) : 'pcs', low_stock_threshold: parseFloat(item.low_stock_threshold) || 5,
+                            };
+                            saveProduct(productData); importedCount++;
+                        });
+                        alert(`Импорт завершен!\nДобавлено/Обновлено: ${importedCount}\nПропущено: ${skippedCount}`);
+                    } catch { alert("Произошла ошибка при чтении файла."); } finally { if (fileInputRef.current) fileInputRef.current.value = null; }
+                };
+                reader.readAsArrayBuffer(file);
+            };
+
+            const triggerFileInput = () => fileInputRef.current.click();
+
+            return (
+                <div className="fade-in">
+                    <div className="flex flex-col md:flex-row gap-3 mb-3">
+                        <div className="flex-1 flex gap-3">
+                            <h1 className="text-2xl font-bold mb-0">Товары</h1>
+                            <button className="h-8 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium" onClick={() => navigate('returns')}>↩️ Возврат</button>
+                        </div>
+                        <button className="h-8 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium" onClick={() => { setProductToEdit(null); setShowModal(true); }}>[+] Добавить</button>
+                    </div>
+                    <div className="flex flex-col md:flex-row gap-3 mb-3">
+                        <div className="relative flex-1">
+                            <input type="text" placeholder="Поиск по названию или штрих-коду..." className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
+                        </div>
+                        <div className="flex-1">
+                            <select className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+                                <option value="all">Все категории</option>
+                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                <option value="none">Без категории</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="flex gap-3 mb-3">
+                        <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".xlsx, .xls" />
+                        <button className="py-1.5 px-3 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium" onClick={triggerFileInput}>[↓] Импорт Excel</button>
+                        <button className="py-1.5 px-3 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium" onClick={handleExport}>[↑] Экспорт Excel</button>
+                    </div>
+                    {loading ? (<p>Загрузка...</p>) : (
+                        <div className="bg-white rounded-lg shadow overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="border-b">
+                                    <tr>
+                                        <th className="p-3 text-sm font-medium">Название</th>
+                                        <th className="p-3 text-sm font-medium hidden md:table-cell">Категория</th>
+                                        <th className="p-3 text-sm font-medium">Остаток ({lowStockItems.length})</th>
+                                        <th className="p-3 text-sm font-medium">Цена</th>
+                                        <th className="p-3 text-sm font-medium w-10"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredProducts.map(product => {
+                                        const isLowStock = product.stock <= product.low_stock_threshold;
+                                        const rowClass = isLowStock ? 'bg-red-50' : 'hover:bg-gray-50';
+                                        return (
+                                            <tr key={product.id} className={`border-b dark:border-gray-700 last:border-0 ${rowClass}`}>
+                                                <td className="p-3 text-sm">{product.name}</td>
+                                                <td className="p-3 text-sm hidden md:table-cell">{product.category || 'N/A'}</td>
+                                                <td className="p-3">
+                                                    <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                                                        isLowStock ? 'bg-red-500 text-white animate-pulse' :
+                                                        product.stock > 0 ? 'bg-green-100 text-green-800' :
+                                                        'bg-gray-200 text-gray-800'
+                                                    }`}>
+                                                        {product.stock.toFixed(product.unit === 'kg' ? 3 : 0)} {product.unit}
+                                                    </span>
+                                                </td>
+                                                <td className="p-3 text-sm font-bold">{product.sale_price} ₽ / {product.unit}</td>
+                                                <td className="p-3 text-right">
+                                                    <button onClick={() => { setProductToEdit(product); setShowModal(true); }} className="text-blue-500 text-sm">[✏️]</button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                            {filteredProducts.length === 0 && <p className="p-3 text-center text-gray-500 text-sm">Товары не найдены</p>}
+                        </div>
+                    )}
+                    {showModal && <ProductModal product={productToEdit} onClose={() => setShowModal(false)} />}
+                </div>
+            );
+        }
+
+        function StockPage() {
+            const { products, movements, handleStockMovement } = useData();
+            const [selectedProduct, setSelectedProduct] = useState(null);
+            const [quantity, setQuantity] = useState(1);
+            const [type, setType] = useState('in');
+            const last10Movements = movements.slice(0, 10);
+            const product = products.find(p => p.id === selectedProduct);
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!product || quantity <= 0) { alert('Выберите товар и укажите количество'); return; }
+                try { handleStockMovement(product, quantity, type); alert('Движение зарегистрировано!'); setSelectedProduct(null); setQuantity(1); }
+                catch (error) { alert(error.message); }
+            };
+
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 fade-in">
+                    <div className="bg-white p-4 rounded-lg shadow">
+                        <h2 className="text-lg font-bold mb-3">Движение</h2>
+                        <form onSubmit={handleSubmit} className="space-y-3">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Тип операции</label>
+                                <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                                    <option value="in">Приход</option>
+                                    <option value="out">Списание</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Товар</label>
+                                <select value={selectedProduct || ''} onChange={(e) => setSelectedProduct(e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                                    <option value="" disabled>Выберите товар...</option>
+                                    {products.map(p => (<option key={p.id} value={p.id}>{p.name} (Ост: {p.stock.toFixed(p.unit === 'kg' ? 3 : 0)} {p.unit})</option>))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Количество ({product?.unit || 'шт'})</label>
+                                <input type="number" step={product?.unit === 'kg' ? "0.001" : "1"} value={quantity}
+                                    onChange={(e) => setQuantity(e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" min={product?.unit === 'kg' ? "0.001" : "1"} />
+                            </div>
+                            <button type="submit" className="w-full py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium">{type === 'in' ? 'Оприходовать' : 'Списать'}</button>
+                        </form>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow">
+                        <h2 className="text-lg font-bold mb-3">Последние 10</h2>
+                        <div className="space-y-2 overflow-auto max-h-80">
+                            {last10Movements.length === 0 ? <p className="text-sm">Операций нет.</p> :
+                                last10Movements.map(m => (
+                                    <div key={m.id} className="flex justify-between p-2 bg-gray-50 rounded text-sm">
+                                        <div>
+                                            <p className="font-medium">{m.name}</p>
+                                            <p className="text-xs text-gray-500">{new Date(m.date).toLocaleString()}</p>
+                                        </div>
+                                        <div className={`font-bold ${m.quantity > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                            {m.quantity > 0 ? `+${m.quantity.toFixed(m.unit === 'kg' ? 3 : 0)}` : m.quantity.toFixed(m.unit === 'kg' ? 3 : 0)} {m.unit}
+                                            <span className="text-xs ml-1">
+                                                {m.type === 'in' ? '(Приход)' : m.type === 'out' ? '(Списание)' : m.type === 'sale' ? '(Продажа)' : m.type === 'return' ? '(Возврат)' : ''}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function StatsPage() {
+            const { sales, loading } = useData();
+            const [filter, setFilter] = useState('all');
+
+            const isToday = (date) => {
+                const today = new Date();
+                return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+            };
+            const isThisWeek = (date) => {
+                const today = new Date();
+                const firstDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)));
+                firstDayOfWeek.setHours(0,0,0,0);
+                const lastDayOfWeek = new Date(firstDayOfWeek);
+                lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
+                lastDayOfWeek.setHours(23,59,59,999);
+                return date >= firstDayOfWeek && date <= lastDayOfWeek;
+            };
+            const isThisMonth = (date) => {
+                const today = new Date();
+                return date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+            };
+
+            const filteredSales = useMemo(() => {
+                return sales.filter(sale => {
+                    const saleDate = new Date(sale.createdAt);
+                    if (filter === 'today') return isToday(saleDate);
+                    if (filter === 'week') return isThisWeek(saleDate);
+                    if (filter === 'month') return isThisMonth(saleDate);
+                    return true;
+                });
+            }, [sales, filter]);
+
+            const stats = useMemo(() => {
+                const totalRevenue = filteredSales.reduce((acc, sale) => acc + sale.total, 0);
+                const totalProfit = filteredSales.reduce((acc, sale) => acc + sale.profit, 0);
+                const salesCount = filteredSales.length;
+                const avgCheck = salesCount > 0 ? totalRevenue / salesCount : 0;
+                const avgProfit = salesCount > 0 ? totalProfit / salesCount : 0;
+
+                const productStats = filteredSales.flatMap(sale => sale.items).reduce((acc, item) => {
+                    if (!acc[item.name]) acc[item.name] = { name: item.name, count: 0, revenue: 0, profit: 0, unit: item.unit };
+                    acc[item.name].count += item.quantity;
+                    acc[item.name].revenue += item.sale_price * item.quantity;
+                    acc[item.name].profit += (item.sale_price - item.purchase_price) * item.quantity;
+                    return acc;
+                }, {});
+
+                const topProducts = Object.values(productStats).sort((a, b) => b.count - a.count).slice(0, 5);
+                const topRevenueProducts = Object.values(productStats).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+
+                const dailyData = filteredSales.reduce((acc, sale) => {
+                    const day = new Date(sale.createdAt).toLocaleDateString('ru-RU');
+                    if (!acc[day]) acc[day] = { name: day, total: 0, profit: 0, count: 0 };
+                    acc[day].total += sale.total;
+                    acc[day].profit += sale.profit;
+                    acc[day].count += 1;
+                    return acc;
+                }, {});
+
+                const chartData = Object.values(dailyData)
+                    .sort((a,b) => new Date(a.name.split('.').reverse().join('-')) - new Date(b.name.split('.').reverse().join('-')));
+
+                // Статистика по категориям
+                const categoryStats = filteredSales.flatMap(sale => sale.items).reduce((acc, item) => {
+                    const category = item.category || 'Без категории';
+                    if (!acc[category]) acc[category] = { name: category, revenue: 0, profit: 0 };
+                    acc[category].revenue += item.sale_price * item.quantity;
+                    acc[category].profit += (item.sale_price - item.purchase_price) * item.quantity;
+                    return acc;
+                }, {});
+
+                const topCategories = Object.values(categoryStats).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+
+                return {
+                    totalRevenue, totalProfit, salesCount, avgCheck, avgProfit,
+                    topProducts, topRevenueProducts, chartData, topCategories
+                };
+            }, [filteredSales]);
+
+            const FilterButton = ({ value, label }) => (
+                <button onClick={() => setFilter(value)} className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                    filter === value ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}>{label}</button>
+            );
+
+            const { exportStatsToExcel } = useData();
+
+            if (loading) return <p>Загрузка...</p>;
+
+            return (
+                <div className="space-y-4 fade-in">
+                    <h1 className="text-2xl font-bold">Статистика</h1>
+                    <div className="flex flex-wrap gap-1.5">
+                        <FilterButton value="today" label="Сегодня" />
+                        <FilterButton value="week" label="Неделя" />
+                        <FilterButton value="month" label="Месяц" />
+                        <FilterButton value="all" label="Все время" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <StatCard title="Чеков" value={stats.salesCount} />
+                        <StatCard title="Выручка" value={`${stats.totalRevenue.toFixed(2)} ₽`} />
+                        <StatCard title="Прибыль" value={`${stats.totalProfit.toFixed(2)} ₽`} />
+                        <StatCard title="Средний чек" value={`${stats.avgCheck.toFixed(2)} ₽`} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white p-4 rounded-lg shadow">
+                            <h2 className="text-lg font-bold mb-3">Динамика</h2>
+                            <ChartComponent data={stats.chartData} />
+                        </div>
+                        <div className="bg-white p-4 rounded-lg shadow">
+                            <h2 className="text-lg font-bold mb-3">Топ-5 по количеству</h2>
+                            <div className="space-y-1.5">
+                                {stats.topProducts.length === 0 ? <p className="text-sm">Продаж нет.</p> :
+                                    stats.topProducts.map(p => (
+                                        <div key={p.name} className="flex justify-between p-2 bg-gray-50 rounded text-sm">
+                                            <span className="font-medium">{p.name}</span>
+                                            <span className="font-bold">{p.count.toFixed(p.unit === 'kg' ? 3 : 0)} {p.unit}</span>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow">
+                        <h2 className="text-lg font-bold mb-3">Топ-5 по выручке</h2>
+                        <div className="space-y-1.5">
+                            {stats.topRevenueProducts.length === 0 ? <p className="text-sm">Продаж нет.</p> :
+                                stats.topRevenueProducts.map(p => (
+                                    <div key={p.name} className="flex justify-between p-2 bg-gray-50 rounded text-sm">
+                                        <span className="font-medium">{p.name}</span>
+                                        <span className="font-bold">{p.revenue.toFixed(2)} ₽</span>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow">
+                        <h2 className="text-lg font-bold mb-3">Топ-5 категорий</h2>
+                        <div className="space-y-1.5">
+                            {stats.topCategories.length === 0 ? <p className="text-sm">Категории не найдены.</p> :
+                                stats.topCategories.map(c => (
+                                    <div key={c.name} className="flex justify-between p-2 bg-gray-50 rounded text-sm">
+                                        <span className="font-medium">{c.name}</span>
+                                        <span className="font-bold">Выручка: {c.revenue.toFixed(2)} ₽ | Прибыль: {c.profit.toFixed(2)} ₽</span>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow">
+                        <h2 className="text-lg font-bold mb-3">Экспорт</h2>
+                        <button onClick={() => exportStatsToExcel(stats)} className="w-full py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium">[⬇️] Экспорт в Excel</button>
+                    </div>
+                </div>
+            );
+        }
+
+        function StatCard({ title, value }) {
+            return (
+                <div className="bg-white p-4 rounded-lg shadow">
+                    <h3 className="text-xs font-medium text-gray-500 uppercase">{title}</h3>
+                    <p className="text-2xl font-bold mt-1">{value}</p>
+                </div>
+            );
+        }
+
+        function ChartComponent({ data }) {
+            const canvasRef = useRef(null);
+            const chartRef = useRef(null);
+
+            useEffect(() => {
+                if (!Chart) return;
+                const ctx = canvasRef.current; if (!ctx) return;
+                if (chartRef.current) chartRef.current.destroy();
+
+                const labels = data.map(d => d.name);
+                const totalData = data.map(d => d.total);
+                const profitData = data.map(d => d.profit);
+
+                chartRef.current = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            { label: 'Выручка (₽)',  totalData, backgroundColor: 'rgba(59, 130, 246, 0.7)', yAxisID: 'y' },
+                            { label: 'Прибыль (₽)',  profitData, backgroundColor: 'rgba(16, 185, 129, 0.7)', yAxisID: 'y1' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Выручка' } },
+                            y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Прибыль' }, grid: { drawOnChartArea: false } },
+                        }
+                    }
+                });
+
+                return () => { if (chartRef.current) chartRef.current.destroy(); };
+            }, [data]);
+
+            return <canvas ref={canvasRef}></canvas>;
+        }
+
+        function ChecksPage() {
+            const { sales, loading } = useData();
+            const [filter, setFilter] = useState('all');
+            const [selectedCheck, setSelectedCheck] = useState(null);
+
+            const isToday = (date) => {
+                const today = new Date();
+                return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+            };
+            const isThisWeek = (date) => {
+                const today = new Date();
+                const firstDayOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)));
+                firstDayOfWeek.setHours(0,0,0,0);
+                const lastDayOfWeek = new Date(firstDayOfWeek);
+                lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
+                lastDayOfWeek.setHours(23,59,59,999);
+                return date >= firstDayOfWeek && date <= lastDayOfWeek;
+            };
+            const isThisMonth = (date) => {
+                const today = new Date();
+                return date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+            };
+
+            const filteredSales = useMemo(() => {
+                return sales.filter(sale => {
+                    const saleDate = new Date(sale.createdAt);
+                    if (filter === 'today') return isToday(saleDate);
+                    if (filter === 'week') return isThisWeek(saleDate);
+                    if (filter === 'month') return isThisMonth(saleDate);
+                    return true;
+                });
+            }, [sales, filter]);
+
+            const FilterButton = ({ value, label }) => (
+                <button onClick={() => setFilter(value)} className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                    filter === value ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}>{label}</button>
+            );
+
+            if (loading) return <p>Загрузка...</p>;
+
+            return (
+                <div className="space-y-4 fade-in">
+                    <h1 className="text-2xl font-bold">Чеки</h1>
+                    <div className="flex flex-wrap gap-1.5">
+                        <FilterButton value="today" label="Сегодня" />
+                        <FilterButton value="week" label="Неделя" />
+                        <FilterButton value="month" label="Месяц" />
+                        <FilterButton value="all" label="Все время" />
+                    </div>
+                    <div className="bg-white p-4 rounded-lg shadow">
+                        <h2 className="text-lg font-bold mb-3">Список чеков</h2>
+                        <div className="space-y-2 overflow-auto max-h-96">
+                            {filteredSales.length === 0 ? <p className="text-sm">Чеков нет.</p> :
+                                filteredSales.map(sale => (
+                                    <div key={sale.id} className="flex justify-between p-2 bg-gray-50 rounded text-sm cursor-pointer hover:bg-gray-100" onClick={() => setSelectedCheck(sale)}>
+                                        <div>
+                                            <p className="font-medium">{sale.type === 'sale' ? 'Продажа' : 'Возврат'} #{sale.id.substring(0, 8)}</p>
+                                            <p className="text-xs text-gray-500">{new Date(sale.createdAt).toLocaleString()}</p>
+                                        </div>
+                                        <div className={`font-bold ${sale.type === 'sale' ? 'text-green-500' : 'text-red-500'}`}>
+                                            {sale.type === 'sale' ? '+' : '-'}{sale.total.toFixed(2)} ₽
+                                        </div>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    </div>
+                    {selectedCheck && <CheckDetailsModal check={selectedCheck} onClose={() => setSelectedCheck(null)} />}
+                </div>
+            );
+        }
+
+        function CheckDetailsModal({ check, onClose }) {
+            const { products } = useData();
+            return (
+                <Modal title={`Детали чека ${check.type === 'sale' ? 'Продажа' : 'Возврат'} #${check.id.substring(0, 8)}`} onClose={onClose}>
+                    <div className="space-y-2">
+                        <div className="flex justify-between">
+                            <span className="font-semibold">Дата:</span>
+                            <span>{new Date(check.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="font-semibold">Тип:</span>
+                            <span>{check.type === 'sale' ? 'Продажа' : 'Возврат'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="font-semibold">Общая сумма:</span>
+                            <span className={`font-bold ${check.type === 'sale' ? 'text-green-500' : 'text-red-500'}`}>
+                                {check.type === 'sale' ? '+' : '-'}{check.total.toFixed(2)} ₽
+                            </span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="font-semibold">Прибыль:</span>
+                            <span className={`font-bold ${check.profit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                {check.profit >= 0 ? '+' : ''}{check.profit.toFixed(2)} ₽
+                            </span>
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <h3 className="text-md font-bold mb-2">Товары:</h3>
+                        <div className="space-y-1">
+                            {check.items.map(item => (
+                                <div key={item.id} className="flex justify-between p-1 bg-gray-50 rounded">
+                                    <div className="flex-1">
+                                        <span className="font-medium">{item.name}</span>
+                                        <span className="text-xs text-gray-500"> ({item.quantity} {item.unit})</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs">Цена: {item.sale_price} ₽</span>
+                                        <span className="font-bold">{(item.sale_price * item.quantity).toFixed(2)} ₽</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="mt-4 flex justify-end gap-2 pt-3">
+                        <button type="button" onClick={onClose} className="py-1.5 px-3 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">Закрыть</button>
+                    </div>
+                </Modal>
+            );
+        }
+
+        function CategoriesPage() {
+            const { products, loading } = useData();
+            const [categories, setCategories] = useState([]);
+            const [showModal, setShowModal] = useState(false);
+            const [categoryToEdit, setCategoryToEdit] = useState(null);
+            const [search, setSearch] = useState('');
+
+            useEffect(() => {
+                const allCategories = products.map(p => p.category).filter(Boolean);
+                setCategories([...new Set(allCategories)]);
+            }, [products]);
+
+            const filteredCategories = useMemo(() => {
+                return categories.filter(cat => cat.toLowerCase().includes(search.toLowerCase()));
+            }, [categories, search]);
+
+            const addCategory = (name) => {
+                if (!name.trim()) return;
+                const newCat = name.trim();
+                if (categories.includes(newCat)) return;
+                setCategories(prev => [...prev, newCat]);
+                // Обновляем продукты, если нужно
+                // Для простоты, мы просто обновим список категорий, а сами товары можно редактировать в другом месте.
+            };
+
+            const deleteCategory = (name) => {
+                if (window.confirm(`Удалить категорию "${name}"? Все товары в этой категории будут помечены как "Без категории".`)) {
+                    setCategories(prev => prev.filter(cat => cat !== name));
+                    // Здесь можно было бы обновить все товары с этой категорией, установив category: ''
+                }
+            };
+
+            const editCategory = (oldName, newName) => {
+                if (!newName.trim()) return;
+                const trimmedNewName = newName.trim();
+                if (trimmedNewName === oldName) return;
+                if (categories.includes(trimmedNewName)) return;
+                setCategories(prev => prev.map(cat => cat === oldName ? trimmedNewName : cat));
+                // Здесь можно было бы обновить все товары с этой категорией, установив category: trimmedNewName
+            };
+
+            return (
+                <div className="fade-in">
+                    <div className="flex flex-col md:flex-row gap-3 mb-3">
+                        <div className="flex-1">
+                            <h1 className="text-2xl font-bold mb-0">Категории товаров</h1>
+                        </div>
+                        <button className="h-8 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium" onClick={() => { setCategoryToEdit(null); setShowModal(true); }}>[+] Добавить категорию</button>
+                    </div>
+                    <div className="flex flex-col md:flex-row gap-3 mb-3">
+                        <div className="relative flex-1">
+                            <input type="text" placeholder="Поиск категории..." className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
+                        </div>
+                    </div>
+                    {loading ? (<p>Загрузка...</p>) : (
+                        <div className="bg-white rounded-lg shadow overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="border-b">
+                                    <tr>
+                                        <th className="p-3 text-sm font-medium">Название категории</th>
+                                        <th className="p-3 text-sm font-medium w-10"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredCategories.map(category => (
+                                        <tr key={category} className={`border-b last:border-0 hover:bg-gray-50`}>
+                                            <td className="p-3 text-sm">{category}</td>
+                                            <td className="p-3 text-right">
+                                                <button onClick={() => { setCategoryToEdit(category); setShowModal(true); }} className="text-blue-500 text-sm mr-2">[✏️]</button>
+                                                <button onClick={() => deleteCategory(category)} className="text-red-500 text-sm">[🗑️]</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {filteredCategories.length === 0 && <p className="p-3 text-center text-gray-500 text-sm">Категории не найдены</p>}
+                        </div>
+                    )}
+                    {showModal && <CategoryModal category={categoryToEdit} onClose={() => setShowModal(false)} onSave={categoryToEdit ? editCategory : addCategory} />}
+                </div>
+            );
+        }
+
+        function CategoryModal({ category, onClose, onSave }) {
+            const [name, setName] = useState(category || '');
+            const [isEditing, setIsEditing] = useState(!!category);
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!name.trim()) return;
+                onSave(isEditing ? category : '', name.trim());
+                onClose();
+            };
+
+            return (
+                <Modal title={isEditing ? 'Редактировать категорию' : 'Новая категория'} onClose={onClose}>
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Название категории*</label>
+                            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" required />
+                        </div>
+                        <div className="flex justify-end gap-2 pt-3">
+                            <button type="button" onClick={onClose} className="py-1.5 px-3 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">Отмена</button>
+                            <button type="submit" className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium">Сохранить</button>
+                        </div>
+                    </form>
+                </Modal>
+            );
+        }
+
+        function LoadingScreen() {
+            return (
+                <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+                    <h1 className="text-2xl font-bold text-blue-500 mb-2 animate-pulse">💰 My Shop v8</h1>
+                    <p className="text-sm">Загрузка...</p>
+                </div>
+            );
+        }
+
+        function Modal({ title, children, onClose }) {
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50" onClick={onClose}>
+                    <div className="bg-white p-4 w-full max-w-md m-4 rounded-lg shadow-lg fade-in" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-lg font-bold">{title}</h3>
+                            <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-lg">[X]</button>
+                        </div>
+                        {children}
+                    </div>
+                </div>
+            );
+        }
+
+        function ProductModal({ product, onClose }) {
+            const { saveProduct, getProductByBarcode, categories } = useData();
+            const [formData, setFormData] = useState({
+                id: product ? product.id : `prod_${Date.now()}`,
+                name: product ? product.name : '',
+                barcode: product ? product.barcode : '',
+                purchase_price: product ? product.purchase_price : 0,
+                sale_price: product ? product.sale_price : 0,
+                stock: product ? product.stock : 0,
+                category: product ? product.category : '',
+                unit: product ? product.unit : 'pcs',
+                low_stock_threshold: product ? product.low_stock_threshold : 5,
+            });
+            const [showScanner, setShowScanner] = useState(false);
+
+            const handleChange = (e) => {
+                const { name, value, type } = e.target;
+                const val = type === 'number' ? (value === '' ? '' : parseFloat(value) || 0) : value;
+                setFormData(prev => ({ ...prev, [name]: val }));
+            };
+
+            const onScanSuccess = (decodedText) => {
+                if (getProductByBarcode(decodedText) && (!product || product.barcode !== decodedText)) alert("Этот штрих-код уже используется!");
+                else setFormData(prev => ({ ...prev, barcode: decodedText }));
+                setShowScanner(false);
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!formData.name || !formData.sale_price || formData.sale_price <= 0) { alert('Заполните название и цену продажи (>0)'); return; }
+                const existing = getProductByBarcode(formData.barcode);
+                if (formData.barcode && existing && existing.id !== formData.id) { alert("Этот штрих-код уже используется!"); return; }
+                const normalized = {
+                    ...formData,
+                    stock: formData.stock === '' ? 0 : formData.stock,
+                    low_stock_threshold: formData.low_stock_threshold === '' ? 5 : formData.low_stock_threshold
+                };
+                saveProduct(normalized); onClose();
+            };
+
+            return (
+                <Modal title={product ? 'Редактировать' : 'Новый товар'} onClose={onClose}>
+                    {!showScanner ? (
+                        <form onSubmit={handleSubmit} className="space-y-3">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Название*</label>
+                                <input name="name" value={formData.name} onChange={handleChange} className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" required />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Ед. изм.*</label>
+                                <select name="unit" value={formData.unit} onChange={handleChange} className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                                    <option value="pcs">шт. (Поштучно)</option>
+                                    <option value="kg">кг (На развес)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Категория</label>
+                                <input name="category" value={formData.category} onChange={handleChange} className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" list="categories-list" />
+                                <datalist id="categories-list">{categories.map(c => <option key={c} value={c} />)}</datalist>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Штрих-код</label>
+                                <div className="flex gap-1.5">
+                                    <input name="barcode" value={formData.barcode} onChange={handleChange} className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" />
+                                    <button type="button" onClick={() => setShowScanner(true)} className="px-2 py-1.5 bg-gray-200 hover:bg-gray-300 rounded text-sm">[|||]</button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Цена закупки (₽)</label>
+                                    <input name="purchase_price" type="number" step="0.01" value={formData.purchase_price} onChange={handleChange} className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Цена продажи (₽ / {formData.unit})*</label>
+                                    <input name="sale_price" type="number" step="0.01" value={formData.sale_price} onChange={handleChange} className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" required />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Начальный остаток ({formData.unit})</label>
+                                    <input name="stock" type="number" step={formData.unit === 'kg' ? "0.001" : "1"} value={formData.stock} onChange={handleChange} className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Порог низкого остатка ({formData.unit})</label>
+                                    <input name="low_stock_threshold" type="number" step={formData.unit === 'kg' ? "0.001" : "1"} value={formData.low_stock_threshold} onChange={handleChange} className="w-full px-2 py-1.5 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm" />
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-3">
+                                <button type="button" onClick={onClose} className="py-1.5 px-3 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">Отмена</button>
+                                <button type="submit" className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium">Сохранить</button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div>
+                            <BarcodeScannerComponent onSuccess={onScanSuccess} onError={(err) => console.warn(err)} />
+                            <button onClick={() => setShowScanner(false)} className="w-full py-2 px-3 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium mt-3">Назад</button>
+                        </div>
+                    )}
+                </Modal>
+            );
+        }
+
+        function WeightInputModal({ product, onClose, onConfirm }) {
+            const [weight, setWeight] = useState(1.000);
+            const maxWeight = product.stock;
+            const handleSubmit = (e) => { e.preventDefault(); const floatWeight = parseFloat(weight); if (floatWeight > 0) onConfirm(floatWeight); };
+
+            return (
+                <Modal title={`Введите вес (${product.unit})`} onClose={onClose}>
+                    <p className="mb-2 text-sm">Товар: <span className="font-medium">{product.name}</span></p>
+                    <p className="mb-3 text-xs text-gray-500">Цена: {product.sale_price} ₽/{product.unit} | Остаток: {maxWeight.toFixed(3)} {product.unit}</p>
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Количество ({product.unit})</label>
+                            <input type="number" step="0.001" min="0.001" max={maxWeight} value={weight}
+                                onChange={(e) => setWeight(e.target.value)} className="w-full px-3 py-3 border border-gray-300 rounded bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-xl text-center" autoFocus required />
+                        </div>
+                        <div className="flex justify-end gap-2 pt-3">
+                            <button type="button" onClick={onClose} className="py-1.5 px-3 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium">Отмена</button>
+                            <button type="submit" className="py-1.5 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium">Добавить {(weight * product.sale_price).toFixed(2)} ₽</button>
+                        </div>
+                    </form>
+                </Modal>
+            );
+        }
+
+        function BarcodeScannerComponent({ onSuccess, onError }) {
+            const scannerRef = useRef(null);
+            const [isScanning, setIsScanning] = useState(false);
+
+            useEffect(() => {
+                if (!Html5Qrcode) { console.error("Сканер (Html5Qrcode) не загружена!"); return; }
+                const scanner = new Html5Qrcode("scanner-container"); scannerRef.current = scanner;
+                setIsScanning(true);
+                scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, onSuccess, onError)
+                    .catch(() => {
+                        scanner.start({}, { fps: 10, qrbox: { width: 250, height: 150 } }, onSuccess, onError)
+                            .catch(err2 => console.error("Ошибка запуска сканера:", err2));
+                    })
+                    .finally(() => setIsScanning(false));
+                return () => {
+                    try { if (scannerRef.current && scannerRef.current.isScanning) scannerRef.current.stop(); }
+                    catch (err) { console.warn("Ошибка при остановке сканера:", err); }
+                };
+            }, [onSuccess, onError]);
+
+            return (
+                <div>
+                    {isScanning && <div className="text-center mb-3">Сканирование... <span className="animate-spin">⏳</span></div>}
+                    <div id="scanner-container" className="w-full rounded-lg overflow-hidden"></div>
+                </div>
+            );
+        }
+
+        function Notification({ message, type = 'success' }) {
+            const colors = { success: 'bg-green-500', error: 'bg-red-500', warning: 'bg-yellow-500' };
+            return (
+                <div className={`fixed bottom-20 md:bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg text-white shadow-lg z-50 ${colors[type]}`}>
+                    {message}
+                </div>
+            );
+        }
+
+        function Root() {
+            if (!React || !ReactDOM || !Babel) {
+                return (
+                    <div style={{ padding: '20px', fontFamily: 'sans-serif', color: 'red' }}>
+                        <h1>Ошибка загрузки...</h1>
+                        <p>Основные библиотеки (React, Babel) не смогли загрузиться.</p>
+                        <p>Пожалуйста, проверьте интернет и обновите страницу.</p>
+                    </div>
+                );
+            }
+            return (
+                <DataProvider>
+                    <NavigationProvider>
+                        <App />
+                    </NavigationProvider>
+                </DataProvider>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<Root />);
+    </script>
 </body>
 </html>
-
